@@ -1,0 +1,16 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+
+# Ignore JetBrains Rider and IntelliJ IDEA files
+.idea/
+
+# Ignore build outputs
+bin/
+obj/
+out/
+
+# Ignore Visual Studio settings
+.vs/
