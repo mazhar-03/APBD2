@@ -1,8 +1,33 @@
-﻿//
-// ElectronicDevice dev1 = new ElectronicDevice(1, "Telephone", true);
-// Console.WriteLine(dev1.ToString());
-
+﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
+
+//tests
+/*
+// Smartwatches smartwatches = new Smartwatches(1, "apple se", true, 45);
+
+// PersonalComputer pc1 = new PersonalComputer(2, "Test PC", false, "");
+// Console.WriteLine(pc1);
+// pc1.TurnOn();
+// Console.WriteLine(pc1);
+
+// PersonalComputer pc2 = new PersonalComputer(3, "Old PC", false, "    ");
+// Console.WriteLine(pc2);
+// pc2.TurnOn();
+// Console.WriteLine(pc2);
+
+// PersonalComputer pc4 = new PersonalComputer(4, "Office PC", true, "");
+// Console.WriteLine(pc4);
+
+// EmbeddedDevices ed1 = new EmbeddedDevices(1, "Sensor", false, "192.168.1.1", "MD Ltd. Network");
+// Console.WriteLine(ed1);
+// ed1.TurnOn();
+// Console.WriteLine(ed1);
+
+// EmbeddedDevices ed2 = new EmbeddedDevices(2, "Camera", false, "999.999.999.999", "MD Ltd. Wifi");
+
+// EmbeddedDevices ed3 = new EmbeddedDevices(3, "Router", false, "192.168.1.100", "Home Network");
+// ed3.TurnOn();
+*/
 
 public abstract class ElectronicDevice
 {
@@ -41,7 +66,7 @@ public abstract class ElectronicDevice
     }
     
     
-    public virtual bool CanTurnOn()
+    protected virtual bool CanTurnOn()
     {
         return true; // Default implementation allows turning on
     }
@@ -78,14 +103,14 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier
                 throw new ArgumentException("Battery percentage must be between 0 and 100");
             _batteryPercentage = value;
             
-            if(value < 20)
+            if(_batteryPercentage < 20)
                 Notify("Battery is low!!!!");    
         }
     }
 
     public Smartwatches(int id, string name, bool isOn, int batteryPercentage) : base(id, name, isOn)
     {
-        _batteryPercentage = batteryPercentage;
+        BatteryPercentage = batteryPercentage;
     }
 
     public void Notify(string msg)
@@ -93,17 +118,24 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier
         Console.WriteLine(msg);
     }
 
-    public override bool CanTurnOn()
+    protected override bool CanTurnOn()
     {
-        if(_batteryPercentage == 0 )
-            throw new EmptyBatteryException("Smartwatches can not be turned on with no battery percentage");
+        return _batteryPercentage > 0;
+    }
+
+    public override void TurnOn()
+    {
+        if(!CanTurnOn())
+            throw new EmptyBatteryException("Smartwatches cannot turn on with no battery");
+        
+        //Since the reqs are say "for setting" we do not use BatteryPercentage
         _batteryPercentage -= 10;
-        return true;
+        base.TurnOn();
     }
 
     public override string ToString()
     {
-        return base.ToString() + $"Battery Percentage: {_batteryPercentage}";
+        return base.ToString() + $" | Battery Percentage: {BatteryPercentage}%";
     }
 }
 
@@ -121,24 +153,40 @@ public class PersonalComputer : ElectronicDevice
 {
     private string _operationSystem;
 
-    public string OperationSystem { get; set; }
-
-    public override bool CanTurnOn()
+    public string OperationSystem
     {
-        if(string.IsNullOrEmpty(OperationSystem))
-            throw new EmptySystemException("PC's without any operation system specified, cannot be launched");
-        return true;
+        get => _operationSystem;
+        set
+        {
+            _operationSystem = value;
+        }
     }
-
 
     public PersonalComputer(int id, string name, bool isOn, string operationSystem) : base(id, name, isOn)
     {
-        _operationSystem = operationSystem;
+        OperationSystem = operationSystem;
+        
+        if (isOn && string.IsNullOrWhiteSpace(operationSystem))
+            throw new EmptySystemException("PC cannot be created as ON without an operating system.");
+    }
+    
+    //PC can not turn on without an OS
+    protected override bool CanTurnOn()
+    {
+        return !string.IsNullOrWhiteSpace(OperationSystem);
+    }
+    
+    //if user try to launch without an OS send our custom exception    
+    public override void TurnOn()
+    {
+        if (!CanTurnOn())
+            throw new EmptySystemException("PC can not be launched without an any proper operation system"); 
+        base.TurnOn();
     }
 
     public override string ToString()
     {
-        return base.ToString() + $"Operation System: {_operationSystem}";
+        return base.ToString() + $" | Operation System: {_operationSystem}";
     }
 }
 
@@ -150,44 +198,64 @@ public class EmptySystemException : Exception
 public class EmbeddedDevices : ElectronicDevice
 {
     private string _ipAddress;
-    public string NetworkName { get; set; }
-
-
+    private string _networkName;
+    
     public string IpName
     {
         get => _ipAddress;
         set
         {
-            //got it from stack overflow 
-            // https://stackoverflow.com/questions/4890789/regex-for-an-ip-address
-            Regex regex = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
+            // got the regex values from gpt 
+            Regex regex = new Regex(@"^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\."
+                                    + @"(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\."
+                                    + @"(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\."
+                                    + @"(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$");
             if(!regex.IsMatch(value))
                 throw new ArgumentException("Invalid IP address specified");
             _ipAddress = value;
         }
     }
+    public string NetworkName
+    {
+        get => _networkName;
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("Network name cannot be empty.");
+            _networkName = value;
+        }
+    }
 
     public EmbeddedDevices(int id, string name, bool isOn, string ipAddress, string connectionName) : base(id, name, isOn)
     {
-        _ipAddress = ipAddress;
+        IpName = ipAddress;
         NetworkName = connectionName;
     }
 
     public void Connect()
     {
         if(!NetworkName.Contains("MD Ltd."))
-            throw new ConnectionException("Cannot connect to a device. Contains banned phrase");
+            throw new ConnectionException("Cannot connect to a device. Must have MD Ltd.");
+        Console.WriteLine($"Connecting to device: {NetworkName}");
     }
 
-    public override bool CanTurnOn()
+    protected override bool CanTurnOn()
     {
-        Connect(); 
-        return true;
+        return NetworkName.Contains("MD Ltd.");
+    }
+
+    public override void TurnOn()
+    {
+        Connect();
+        if (!CanTurnOn())
+            throw new ConnectionException("Device cannot be turned on due to network restrictions.");
+        
+        base.TurnOn();
     }
 
     public override string ToString()
     {
-        return base.ToString() + $"IP: {_ipAddress} - Network: {NetworkName}";
+        return base.ToString() + $" | IP: {_ipAddress} - Network: {NetworkName}";
     }
 }
 public class ConnectionException : Exception
