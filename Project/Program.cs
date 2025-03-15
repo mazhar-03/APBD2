@@ -29,6 +29,12 @@ using System.Text.RegularExpressions;
 // ed3.TurnOn();
 */
 
+//try1
+var path = "input.txt";
+DeviceManager manager = new DeviceManager(path);
+
+manager.showAllDevices();
+
 public abstract class ElectronicDevice
 {
     private int _id;
@@ -261,5 +267,100 @@ public class EmbeddedDevices : ElectronicDevice
 public class ConnectionException : Exception
 {
     public ConnectionException(string message) : base(message) { }
+}
+
+public class DeviceManager
+{
+    private List<ElectronicDevice> _devices = new List<ElectronicDevice>();
+    private const int MaxNumOfDevices = 15;
+
+    public DeviceManager(string FilePath)
+    {
+        if(!File.Exists(FilePath)) 
+            throw new FileNotFoundException("File does not exist");
+
+
+        var lines = File.ReadAllLines(FilePath);
+        foreach (var line in lines)
+        {
+            var parts = line.Split(',');
+            if (parts.Length < 3)
+            {
+                Console.WriteLine($"Skipping invalid line: {line}");
+                continue;
+            }
+            
+            var typeId = parts[0];
+            var typeAndIdArr = typeId.Split('-');
+            
+            if (typeAndIdArr.Length != 2)
+            {
+                Console.WriteLine($"Skipping invalid type-id format: {line}");
+                continue;
+            }
+            
+            string type = typeAndIdArr[0];
+            int id = int.Parse(typeAndIdArr[1]);
+            string name = parts[1];
+            bool isOn = false;
+            if (type == "SW" || type == "P")
+            {
+                if (!(parts[2] == "false" || parts[2] == "true"))
+                {
+                    Console.WriteLine($"Skipping invalid isOn value: {line}");
+                    continue;
+                }
+                isOn = bool.Parse(parts[2]);
+            }
+
+            if (_devices.Count >= MaxNumOfDevices)
+            {
+                Console.WriteLine($"Max number of devices: {MaxNumOfDevices}\nCannot add more devices.");
+            }
+
+            switch (type)
+            {
+                case "SW":
+                    if (parts.Length < 4 || !parts[3].Contains("%"))
+                    {
+                        Console.WriteLine($"Skipping invalid smartwatch data: {line}");
+                        continue;
+                    }
+                    
+                    int batteryPercentage = int.Parse(parts[3].TrimEnd('%'));
+                    _devices.Add(new Smartwatches(id, name, isOn, batteryPercentage));
+                    break;
+                case "P":
+                    if (parts.Length <= 4)
+                    {
+                        Console.WriteLine($"Skipping invalid PC data (missing OS): {line}");
+                        continue;
+                    }
+                    
+                    _devices.Add(new PersonalComputer(id, name, isOn, parts[3]));
+                    break;
+                case "ED":
+                    if (parts.Length <= 5)
+                    {
+                        Console.WriteLine($"Skipping invalid embedded device data: {line}");
+                        continue;
+                    }
+                    
+                    _devices.Add(new EmbeddedDevices(id, name, isOn, parts[3], parts[4]));
+                    break;
+                default:
+                    Console.WriteLine($"Skipping unknown device type: {line}");
+                    break;
+            }
+        }
+    }
+    public void showAllDevices()
+    {
+        Console.WriteLine("\nDevices:");
+        foreach (var device in _devices)
+        {
+            Console.WriteLine(device);
+        }
+    }
 }
 
