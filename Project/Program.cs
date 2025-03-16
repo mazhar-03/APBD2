@@ -37,6 +37,7 @@ var manager = new DeviceManager(path);
 manager.AddDevice("MacBook Pro", 3,false, "macOS"); 
 manager.AddDevice( "Raspberry Pi", 2,false, "192.168.1.10", "MD Ltd. Wifi"); 
 manager.AddDevice("Garmin Watch", 2, false, "80%"); 
+manager.removeDevice(3, "P");
 manager.showAllDevices();
 
 public abstract class ElectronicDevice
@@ -290,7 +291,7 @@ public class DeviceManager
             var parts = line.Split(',');
             if (parts.Length < 3)
             {
-                Console.WriteLine($"Skipping invalid line: {line}");
+                Console.WriteLine($"Skipping invalid line: {line}\n");
                 continue;
             }
 
@@ -435,5 +436,32 @@ public class DeviceManager
         if (device is PersonalComputer) return "P";
         if (device is EmbeddedDevices) return "ED";
         return "Unknown";
+    }
+
+    public void removeDevice(int id, string deviceType)
+    {
+        deviceType = deviceType.ToUpper();
+        if (deviceType != "SW" && deviceType != "P" && deviceType != "ED")
+        {
+            Console.WriteLine("Invalid device type! Use SW, P, or ED.");
+            return;
+        }
+
+        ElectronicDevice deviceToRemove = null;
+        foreach (var device in _devices)
+            if (device.Id == id && GetDeviceType(device) == deviceType)
+            {
+                deviceToRemove = device;
+                break;
+            }
+        
+        if (deviceToRemove == null)
+        {
+            Console.WriteLine($"No {deviceType} device found with ID {id}.");
+            return;
+        }
+        
+        _devices.Remove(deviceToRemove);
+        Console.WriteLine($"{deviceToRemove.GetType().Name} with ID {deviceToRemove.Id} removed successfully.");
     }
 }
