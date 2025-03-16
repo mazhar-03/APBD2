@@ -34,13 +34,32 @@ var manager = new DeviceManager(path);
 
 
 // addDevice() test
-manager.AddDevice("MacBook Pro", 3, false, "macOS");
-manager.AddDevice("Raspberry Pi", 2, false, "192.168.1.10", "MD Ltd. Wifi");
-manager.AddDevice("Garmin Watch", 2, false, "80%");
-manager.removeDevice(3, "P");
-manager.EditDevice(1, "SW", "Just Watch", "14%");
-manager.EditDevice(2, "ed", "Raspberry Pi", "192.168.1.10", "sikerler ltd.");
-manager.showAllDevices();
+// manager.AddDevice("MacBook Pro", 3, false, "macOS");
+// manager.AddDevice("Raspberry Pi", 2, false, "192.168.1.10", "MD Ltd. Wifi");
+// manager.AddDevice("Garmin Watch", 2, false, "80%");
+// manager.RemoveDevice(3, "P");
+// manager.EditDevice(1, "SW", "Just Watch", "14%");
+// manager.EditDevice(2, "ed", "Raspberry Pi", "192.168.1.10", "sikerler ltd.");
+// manager.TurnOn(43, "P");
+// manager.ShowAllDevices();
+
+manager.AddDevice("Apple Watch",1, false, "10%"); // Smartwatch (low battery)
+manager.AddDevice( "MacBook Pro", 2,false, ""); // Personal Computer (no OS)
+manager.AddDevice( "Raspberry Pi", 3,false, "192.168.1.10", "MD Ltd. Wifi"); // Embedded Device
+
+manager.ShowAllDevices();
+
+// ❌ Attempt to turn on a device with issues
+manager.TurnOn(1, "SW"); // Should fail due to low battery
+manager.TurnOn(2, "P"); // Should fail due to missing OS
+manager.TurnOn(3, "ED"); // Should work
+manager.ShowAllDevices();
+
+manager.TurnOff(1, "sw");
+manager.TurnOff(2, "p");
+manager.TurnOff(3, "ED");
+manager.ShowAllDevices();
+
 
 public abstract class ElectronicDevice
 {
@@ -278,13 +297,13 @@ public class DeviceManager
     private const int MaxNumOfDevices = 15;
     private readonly List<ElectronicDevice> _devices = new();
 
-    public DeviceManager(string FilePath)
+    public DeviceManager(string filePath)
     {
-        if (!File.Exists(FilePath))
+        if (!File.Exists(filePath))
             throw new FileNotFoundException("File does not exist");
 
 
-        var lines = File.ReadAllLines(FilePath);
+        var lines = File.ReadAllLines(filePath);
         foreach (var line in lines)
         {
             var parts = line.Split(',');
@@ -358,7 +377,7 @@ public class DeviceManager
         }
     }
 
-    public void showAllDevices()
+    public void ShowAllDevices()
     {
         Console.WriteLine("\nDevices:");
         foreach (var device in _devices) Console.WriteLine(device);
@@ -372,19 +391,13 @@ public class DeviceManager
             return;
         }
 
-        string deviceType = null;
+        string deviceType;
         if (data.EndsWith('%'))
-        {
             deviceType = "SW";
-        }
         else if (IsValidIp(data) && !string.IsNullOrWhiteSpace(networkName))
-        {
             deviceType = "ED";
-        }
         else if (!string.IsNullOrWhiteSpace(data))
-        {
             deviceType = "P";
-        }
         else
         {
             Console.WriteLine("Invalid data format. Could not determine device type.");
@@ -393,7 +406,7 @@ public class DeviceManager
 
         if (_devices.Any(d => GetDeviceType(d) == deviceType && d.Id == id))
         {
-            Console.WriteLine($"A {deviceType} with ID {id} already exists.");
+            Console.WriteLine($"Error: A {deviceType.ToUpper()} device with ID {id} already exists.");
             return;
         }
 
@@ -404,26 +417,33 @@ public class DeviceManager
         }
 
         ElectronicDevice newDevice = null;
-        switch (deviceType)
+        try
         {
-            case "SW":
-                if (!int.TryParse(data.TrimEnd('%'), out var battery) || battery < 0 || battery > 100)
-                {
-                    Console.WriteLine("Invalid battery percentage.");
-                    return;
-                }
-
-                newDevice = new Smartwatches(id, name, isOn, battery);
-                break;
-
-            case "P":
-                newDevice = new PersonalComputer(id, name, isOn, data);
-                break;
-
-            case "ED":
-                newDevice = new EmbeddedDevices(id, name, false, data, networkName);
-                break;
+            switch (deviceType)
+                    {
+                        case "SW":
+                            if (!int.TryParse(data.TrimEnd('%'), out var battery) || battery < 0 || battery > 100)
+                            {
+                                Console.WriteLine("Invalid battery percentage.");
+                                return;
+                            }
+            
+                            newDevice = new Smartwatches(id, name, isOn, battery);
+                            break;
+            
+                        case "P":
+                            newDevice = new PersonalComputer(id, name, isOn, data);
+                            break;
+            
+                        case "ED":
+                            newDevice = new EmbeddedDevices(id, name, false, data, networkName);
+                            break;
+                    }
+        }catch (EmptySystemException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
         }
+        
 
         if (newDevice != null)
         {
@@ -450,10 +470,10 @@ public class DeviceManager
         return "Unknown";
     }
 
-    public void removeDevice(int id, string deviceType)
+    public void RemoveDevice(int id, string deviceType)
     {
         var deviceToRemove = FindDevice(id, deviceType);
-
+        if(deviceToRemove == null) return;
         _devices.Remove(deviceToRemove);
         Console.WriteLine($"{deviceToRemove.GetType().Name} with ID {deviceToRemove.Id} removed successfully.");
     }
@@ -461,7 +481,7 @@ public class DeviceManager
     public void EditDevice(int id, string deviceType, string newName, string newData, string newNetwork = null)
     {
         var deviceToEdit = FindDevice(id, deviceType);
-
+        if(deviceToEdit == null) return;
         try
         {
             if (!string.IsNullOrWhiteSpace(newName)) deviceToEdit.Name = newName;
@@ -514,11 +534,11 @@ public class DeviceManager
                     break;
             }
 
-            Console.WriteLine($"{deviceType} device with ID {id} updated successfully!");
+            Console.WriteLine($"{deviceType.ToUpper()} device with ID {id} updated successfully!");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error while updating {deviceType} device (ID: {id}): {ex.Message}");
+            Console.WriteLine($"Unexpected error while updating {deviceType.ToUpper()} device (ID: {id}): {ex.Message}");
         }
     }
 
@@ -535,7 +555,38 @@ public class DeviceManager
             if (device.Id == id && GetDeviceType(device) == deviceType)
                 return device;
 
-        Console.WriteLine($"No {deviceType} device found with ID {id}.");
+        Console.WriteLine($"No {deviceType.ToUpper()} device found with ID {id}.");
         return null;
+    }
+
+    public void TurnOn(int id, string deviceType)
+    {
+        ElectronicDevice device = FindDevice(id, deviceType);
+        if(device == null) return;
+        try
+        {
+            device.TurnOn();
+            Console.WriteLine($"{deviceType.ToUpper()} device with ID {id} is now ON.");
+        }
+        catch (EmptyBatteryException ex) 
+        {
+            Console.WriteLine($"Error: {deviceType.ToUpper()} device (ID {id}) cannot turn on - {ex.Message}");
+        }
+        catch (EmptySystemException ex) 
+        {
+            Console.WriteLine($"Error: {deviceType.ToUpper()} device (ID {id}) cannot turn on - {ex.Message}");
+        }
+        catch (ConnectionException ex)
+        {
+            Console.WriteLine($"Error: {deviceType.ToUpper()} device (ID {id}) cannot turn on - {ex.Message}");
+        }
+    }
+
+    public void TurnOff(int id, string deviceType)
+    {
+        ElectronicDevice device = FindDevice(id, deviceType);
+        if (device == null) return;
+        device.TurnOff();
+        Console.WriteLine($"{deviceType.ToUpper()} device with ID {id} is now OFF.");
     }
 }
