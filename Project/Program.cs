@@ -43,23 +43,35 @@ var manager = new DeviceManager(path);
 // manager.TurnOn(43, "P");
 // manager.ShowAllDevices();
 
-manager.AddDevice("Apple Watch",1, false, "10%"); // Smartwatch (low battery)
-manager.AddDevice( "MacBook Pro", 2,false, ""); // Personal Computer (no OS)
-manager.AddDevice( "Raspberry Pi", 3,false, "192.168.1.10", "MD Ltd. Wifi"); // Embedded Device
+// manager.AddDevice("Apple Watch",1, false, "10%"); // Smartwatch (low battery)
+// manager.AddDevice( "MacBook Pro", 2,false, ""); // Personal Computer (no OS)
+// manager.AddDevice( "Raspberry Pi", 3,false, "192.168.1.10", "MD Ltd. Wifi"); // Embedded Device
+//
+// manager.ShowAllDevices();
+//
+// // ❌ Attempt to turn on a device with issues
+// manager.TurnOn(1, "SW"); // Should fail due to low battery
+// manager.TurnOn(2, "P"); // Should fail due to missing OS
+// manager.TurnOn(3, "ED"); // Should work
+// manager.ShowAllDevices();
+//
+// manager.TurnOff(1, "sw");
+// manager.TurnOff(2, "p");
+// manager.TurnOff(3, "ED");
+// manager.ShowAllDevices();
 
-manager.ShowAllDevices();
-
-// ❌ Attempt to turn on a device with issues
-manager.TurnOn(1, "SW"); // Should fail due to low battery
-manager.TurnOn(2, "P"); // Should fail due to missing OS
-manager.TurnOn(3, "ED"); // Should work
-manager.ShowAllDevices();
-
-manager.TurnOff(1, "sw");
-manager.TurnOff(2, "p");
-manager.TurnOff(3, "ED");
-manager.ShowAllDevices();
-
+// manager.AddDevice("MacBook Pro", 1, false, "");
+// manager.AddDevice("LENOVO", 2, true, "Windows");
+// manager.AddDevice("DELL", 3, false, "Windows");
+// manager.ShowAllDevices();
+// manager.TurnOn(1, "P");
+// manager.TurnOn(2, "P");
+// manager.TurnOn(3, "P");
+//
+// manager.ShowAllDevices();
+// manager.TurnOff(1, "P");
+// manager.TurnOff(2, "P");
+// manager.TurnOff(3, "P");
 
 public abstract class ElectronicDevice
 {
@@ -396,7 +408,7 @@ public class DeviceManager
             deviceType = "SW";
         else if (IsValidIp(data) && !string.IsNullOrWhiteSpace(networkName))
             deviceType = "ED";
-        else if (!string.IsNullOrWhiteSpace(data))
+        else if (data == "" || !string.IsNullOrWhiteSpace(data))
             deviceType = "P";
         else
         {
