@@ -34,10 +34,12 @@ var manager = new DeviceManager(path);
 
 
 // addDevice() test
-manager.AddDevice("MacBook Pro", 3,false, "macOS"); 
-manager.AddDevice( "Raspberry Pi", 2,false, "192.168.1.10", "MD Ltd. Wifi"); 
-manager.AddDevice("Garmin Watch", 2, false, "80%"); 
+manager.AddDevice("MacBook Pro", 3, false, "macOS");
+manager.AddDevice("Raspberry Pi", 2, false, "192.168.1.10", "MD Ltd. Wifi");
+manager.AddDevice("Garmin Watch", 2, false, "80%");
 manager.removeDevice(3, "P");
+manager.EditDevice(1, "SW", "Just Watch", "14%");
+manager.EditDevice(2, "ed", "Raspberry Pi", "192.168.1.10", "sikerler ltd.");
 manager.showAllDevices();
 
 public abstract class ElectronicDevice
@@ -120,7 +122,7 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier
             _batteryPercentage = value;
 
             if (_batteryPercentage < 20)
-                Notify("Battery is low!!!!");
+                Notify("Smartwatch's battery is low!!!!");
         }
     }
 
@@ -234,8 +236,8 @@ public class EmbeddedDevices : ElectronicDevice
         get => _networkName;
         set
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Network name cannot be empty.");
+            if (!value.Contains("MD Ltd."))
+                throw new ConnectionException("Invalid network name! Embedded devices must connect to 'MD Ltd.'.");
             _networkName = value;
         }
     }
@@ -247,17 +249,14 @@ public class EmbeddedDevices : ElectronicDevice
         Console.WriteLine($"Connecting to device: {NetworkName}");
     }
 
-    protected override bool CanTurnOn()
-    {
-        return NetworkName.Contains("MD Ltd.");
-    }
+    // protected override bool CanTurnOn()
+    // {
+    //     return NetworkName.Contains("MD Ltd.");
+    // }
 
     public override void TurnOn()
     {
         Connect();
-        if (!CanTurnOn())
-            throw new ConnectionException("Device cannot be turned on due to network restrictions.");
-
         base.TurnOn();
     }
 
@@ -374,20 +373,30 @@ public class DeviceManager
         }
 
         string deviceType = null;
-        if(data.EndsWith('%')) deviceType = "SW";
-        else if(IsValidIp(data) && !string.IsNullOrWhiteSpace(networkName)) deviceType = "ED";
-        else if(!string.IsNullOrWhiteSpace(data)) deviceType = "P";
+        if (data.EndsWith('%'))
+        {
+            deviceType = "SW";
+        }
+        else if (IsValidIp(data) && !string.IsNullOrWhiteSpace(networkName))
+        {
+            deviceType = "ED";
+        }
+        else if (!string.IsNullOrWhiteSpace(data))
+        {
+            deviceType = "P";
+        }
         else
-        { 
+        {
             Console.WriteLine("Invalid data format. Could not determine device type.");
             return;
         }
-        
+
         if (_devices.Any(d => GetDeviceType(d) == deviceType && d.Id == id))
         {
             Console.WriteLine($"A {deviceType} with ID {id} already exists.");
             return;
         }
+
         if (string.IsNullOrWhiteSpace(name))
         {
             Console.WriteLine("Device name cannot be empty.");
@@ -398,23 +407,25 @@ public class DeviceManager
         switch (deviceType)
         {
             case "SW":
-                if (!int.TryParse(data.TrimEnd('%'), out int battery) || battery < 0 || battery > 100)
+                if (!int.TryParse(data.TrimEnd('%'), out var battery) || battery < 0 || battery > 100)
                 {
                     Console.WriteLine("Invalid battery percentage.");
                     return;
                 }
+
                 newDevice = new Smartwatches(id, name, isOn, battery);
                 break;
 
-            case "P": 
+            case "P":
                 newDevice = new PersonalComputer(id, name, isOn, data);
                 break;
 
-            case "ED":  
+            case "ED":
                 newDevice = new EmbeddedDevices(id, name, false, data, networkName);
                 break;
         }
-        if(newDevice != null)
+
+        if (newDevice != null)
         {
             _devices.Add(newDevice);
             Console.WriteLine($"{newDevice.GetType().Name} added successfully!");
@@ -430,6 +441,7 @@ public class DeviceManager
 
         return regex.IsMatch(value);
     }
+
     private string GetDeviceType(ElectronicDevice device)
     {
         if (device is Smartwatches) return "SW";
@@ -440,33 +452,90 @@ public class DeviceManager
 
     public void removeDevice(int id, string deviceType)
     {
-        ElectronicDevice deviceToRemove = FindDevice(id, deviceType);
+        var deviceToRemove = FindDevice(id, deviceType);
 
         _devices.Remove(deviceToRemove);
         Console.WriteLine($"{deviceToRemove.GetType().Name} with ID {deviceToRemove.Id} removed successfully.");
     }
 
+    public void EditDevice(int id, string deviceType, string newName, string newData, string newNetwork = null)
+    {
+        var deviceToEdit = FindDevice(id, deviceType);
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(newName)) deviceToEdit.Name = newName;
+
+            switch (deviceType.ToUpper())
+            {
+                case "SW":
+                    if (deviceToEdit is Smartwatches watch)
+                    {
+                        watch.BatteryPercentage = int.Parse(newData.TrimEnd('%'));
+                        Console.WriteLine($"Smartwatch (ID: {id}) battery updated to {newData}");
+                    }
+
+                    break;
+
+                case "P": 
+                    if (deviceToEdit is PersonalComputer pc)
+                    {
+                        pc.OperationSystem = newData;
+                        Console.WriteLine($"Personal Computer (ID: {id}) OS updated to {newData}");
+                    }
+
+                    break;
+
+                case "ED":
+                    if (deviceToEdit is EmbeddedDevices embedded)
+                        try
+                        {
+                            embedded.IpName = newData;
+                            Console.WriteLine($"Embedded Device (ID: {id}) IP updated to {newData}");
+
+                            if (!string.IsNullOrWhiteSpace(newNetwork))
+                            {
+                                embedded.NetworkName = newNetwork;
+                                Console.WriteLine($"Embedded Device (ID: {id}) network updated to {newNetwork}");
+                            }
+                        }
+                        catch (ConnectionException)
+                        {
+                            Console.WriteLine(
+                                $"Error: Cannot update network for Embedded Device (ID: {id}). The network must contain 'MD Ltd.'.");
+                            return;
+                        }
+                        catch (ArgumentException)
+                        {
+                            Console.WriteLine($"Error: Invalid IP address format for Embedded Device (ID: {id}).");
+                            return;
+                        }
+
+                    break;
+            }
+
+            Console.WriteLine($"{deviceType} device with ID {id} updated successfully!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Unexpected error while updating {deviceType} device (ID: {id}): {ex.Message}");
+        }
+    }
+
     private ElectronicDevice FindDevice(int id, string deviceType)
     {
         deviceType = deviceType.ToUpper();
-
-        // ✅ Validate device type
         if (deviceType != "SW" && deviceType != "P" && deviceType != "ED")
         {
             Console.WriteLine("Invalid device type! Use SW, P, or ED.");
             return null;
         }
-        
+
         foreach (var device in _devices)
-        {
             if (device.Id == id && GetDeviceType(device) == deviceType)
-            {
                 return device;
-            }
-        }
 
         Console.WriteLine($"No {deviceType} device found with ID {id}.");
         return null;
     }
-
 }
