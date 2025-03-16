@@ -440,28 +440,33 @@ public class DeviceManager
 
     public void removeDevice(int id, string deviceType)
     {
-        deviceType = deviceType.ToUpper();
-        if (deviceType != "SW" && deviceType != "P" && deviceType != "ED")
-        {
-            Console.WriteLine("Invalid device type! Use SW, P, or ED.");
-            return;
-        }
+        ElectronicDevice deviceToRemove = FindDevice(id, deviceType);
 
-        ElectronicDevice deviceToRemove = null;
-        foreach (var device in _devices)
-            if (device.Id == id && GetDeviceType(device) == deviceType)
-            {
-                deviceToRemove = device;
-                break;
-            }
-        
-        if (deviceToRemove == null)
-        {
-            Console.WriteLine($"No {deviceType} device found with ID {id}.");
-            return;
-        }
-        
         _devices.Remove(deviceToRemove);
         Console.WriteLine($"{deviceToRemove.GetType().Name} with ID {deviceToRemove.Id} removed successfully.");
     }
+
+    private ElectronicDevice FindDevice(int id, string deviceType)
+    {
+        deviceType = deviceType.ToUpper();
+
+        // ✅ Validate device type
+        if (deviceType != "SW" && deviceType != "P" && deviceType != "ED")
+        {
+            Console.WriteLine("Invalid device type! Use SW, P, or ED.");
+            return null;
+        }
+        
+        foreach (var device in _devices)
+        {
+            if (device.Id == id && GetDeviceType(device) == deviceType)
+            {
+                return device;
+            }
+        }
+
+        Console.WriteLine($"No {deviceType} device found with ID {id}.");
+        return null;
+    }
+
 }
