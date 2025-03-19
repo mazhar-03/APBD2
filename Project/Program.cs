@@ -323,10 +323,7 @@ public class DeviceManager
         if (device != null) { device.IsOn = state; SaveToFile(); }
     }
 
-    public int DeviceCount()
-    {
-        return _devices.Count;
-    }
+    public int DeviceCount => _devices.Count;
     
     public void ShowAllDevices()
     {
