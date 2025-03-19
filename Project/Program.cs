@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-DeviceManager deviceManager = new DeviceManager("input.txt");
+var deviceManager = new DeviceManager("input.txt");
 deviceManager.ShowAllDevices();
 
 public abstract class ElectronicDevice
@@ -59,7 +59,7 @@ public abstract class ElectronicDevice
 public class Smartwatches : ElectronicDevice, IPowerNotifier
 {
     private int _batteryPercentage;
-    private bool _notifiedLowBattery = false;  // Checking for it appears just once
+    private bool _notifiedLowBattery; // Checking for it appears just once
 
     public Smartwatches(int id, string name, bool isOn, int batteryPercentage) : base(id, name, isOn)
     {
@@ -79,7 +79,7 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier
             if (_batteryPercentage < 20 && !_notifiedLowBattery)
             {
                 Notify("Smartwatch's battery is low!!!!");
-                _notifiedLowBattery = true;  // 
+                _notifiedLowBattery = true; // 
             }
         }
     }
@@ -142,7 +142,8 @@ public class PersonalComputer : ElectronicDevice
 
     public override string ToString()
     {
-        return base.ToString() + $" | Operation System: {(string.IsNullOrWhiteSpace(OperationSystem) ? "No OS Installed" : OperationSystem)}";
+        return base.ToString() +
+               $" | Operation System: {OperationSystem}";
     }
 }
 
@@ -231,86 +232,90 @@ public class ConnectionException : Exception
 public class DeviceManager
 {
     private const int MaxNumOfDevices = 15;
-    private readonly List<ElectronicDevice> _devices = new();
+    private List<ElectronicDevice> _devices;
+    private string filePath;
 
     public DeviceManager(string filePath)
     {
+        this.filePath = filePath;
+        _devices = new List<ElectronicDevice>();
+        LoadFromFile();
+    }
+
+    private void LoadFromFile()
+    {
         if (!File.Exists(filePath))
-            throw new FileNotFoundException("File does not exist");
+            return;
 
+        string[] lines = File.ReadAllLines(filePath);
+        HashSet<int> existingIds = new HashSet<int>(); // Store IDs to check duplicates
 
-        var lines = File.ReadAllLines(filePath);
-        foreach (var line in lines)
+        foreach (string line in lines)
         {
-            var parts = line.Split(',');
-            if (parts.Length < 3)
+            try
             {
-                Console.WriteLine($"Skipping invalid line: {line}\n");
-                continue;
-            }
-
-            var typeId = parts[0];
-            var typeAndIdArr = typeId.Split('-');
-
-            if (typeAndIdArr.Length != 2)
-            {
-                Console.WriteLine($"Skipping invalid type-id format: {line}");
-                continue;
-            }
-
-            var type = typeAndIdArr[0];
-            var id = int.Parse(typeAndIdArr[1]);
-            var name = parts[1];
-            var isOn = false;
-            if (type == "SW" || type == "P")
-            {
-                if (!(parts[2] == "false" || parts[2] == "true"))
+                var device = ParseDevice(line);
+                if (device != null)
                 {
-                    Console.WriteLine($"Skipping invalid isOn value: {line}");
-                    continue;
+                    // Check if ID already exists
+                    if (existingIds.Contains(device.Id))
+                    {
+                        Console.WriteLine($"Skipping duplicate device ID {device.Id}: {line}");
+                        continue;
+                    }
+
+                    _devices.Add(device);
+                    existingIds.Add(device.Id);
                 }
-
-                isOn = bool.Parse(parts[2]);
             }
-
-            if (_devices.Count >= MaxNumOfDevices)
-                Console.WriteLine($"Max number of devices: {MaxNumOfDevices}\nCannot add more devices.");
-
-            switch (type)
+            catch (Exception ex)
             {
-                case "SW":
-                    if (parts.Length < 4 || !parts[3].Contains("%"))
-                    {
-                        Console.WriteLine($"Skipping invalid smartwatch data: {line}");
-                        continue;
-                    }
-
-                    var batteryPercentage = int.Parse(parts[3].TrimEnd('%'));
-                    _devices.Add(new Smartwatches(id, name, isOn, batteryPercentage));
-                    break;
-                case "P":
-                    if (parts.Length <= 4)
-                    {
-                        Console.WriteLine($"Skipping invalid PC data (missing OS): {line}");
-                        continue;
-                    }
-
-                    _devices.Add(new PersonalComputer(id, name, isOn, parts[3]));
-                    break;
-                case "ED":
-                    if (parts.Length <= 5)
-                    {
-                        Console.WriteLine($"Skipping invalid embedded device data: {line}");
-                        continue;
-                    }
-
-                    _devices.Add(new EmbeddedDevices(id, name, isOn, parts[3], parts[4]));
-                    break;
-                default:
-                    Console.WriteLine($"Skipping unknown device type: {line}");
-                    break;
+                Console.WriteLine($"Skipping invalid data: {line} - {ex.Message}");
             }
         }
+    }
+
+    private ElectronicDevice ParseDevice(string line)
+    {
+        string[] parts = line.Split(',');
+
+        if (parts.Length < 4)
+            throw new FormatException("Incomplete device data.");
+
+        var typeAndId = parts[0].Split('-');
+        var type = typeAndId[0];
+        var id = int.Parse(typeAndId[1]);
+        var name = parts[1];
+        var isOn = bool.Parse(parts[2]);
+
+        switch (type)
+        {
+            case "SW":
+                var battery = int.Parse(parts[3].Replace("%", ""));
+                return new Smartwatches(id, name, isOn, battery);
+
+            case "P":
+                var os = parts.Length > 3 ? parts[3] : "";
+                return new PersonalComputer(id, name, isOn, os);
+
+            case "ED":
+                if (parts.Length < 5)
+                    throw new FormatException("Embedded device missing required fields.");
+
+                var ip = parts[3];
+                var network = parts[4];
+
+                return new EmbeddedDevices(id, name, isOn, ip, network);
+
+            default:
+                throw new FormatException($"Unknown device type: {type}");
+        }
+    }
+
+
+    public List<ElectronicDevice> GetAllDevices()
+    {
+        return _devices;
     }
 
     public void ShowAllDevices()
@@ -434,5 +439,10 @@ public class DeviceManager
         if (device == null) return;
 
         device.TurnOff();
+    }
+
+    public int getSize()
+    {
+        return _devices.Count;
     }
 }
