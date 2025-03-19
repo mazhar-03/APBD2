@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 DeviceManager manager = new DeviceManager("devices.txt");
 manager.ShowAllDevices();
-manager.AddDevice(new PersonalComputer(2, "Huawei", true, "Windows"));
+manager.UpdateBattery(1, 32);
 manager.ShowAllDevices();
 
 public abstract class ElectronicDevice
@@ -73,23 +70,23 @@ public class EmptyBatteryException : Exception { public EmptyBatteryException(st
 
 public class PersonalComputer : ElectronicDevice
 {
-    public string OperationSystem { get; set; }
+    public string OperatingSystem { get; set; }
 
-    public PersonalComputer(int id, string name, bool isOn, string operationSystem) : base(id, name, isOn)
+    public PersonalComputer(int id, string name, bool isOn, string operatingSystem) : base(id, name, isOn)
     {
-        OperationSystem = operationSystem;
-        if (isOn && string.IsNullOrWhiteSpace(operationSystem))
+        OperatingSystem = operatingSystem;
+        if (isOn && string.IsNullOrWhiteSpace(operatingSystem))
             throw new EmptySystemException("PC cannot be created as ON without an operating system.");
     }
 
     public override void TurnOn()
     {
-        if (string.IsNullOrWhiteSpace(OperationSystem))
+        if (string.IsNullOrWhiteSpace(OperatingSystem))
             throw new EmptySystemException("PC cannot be launched without an operating system.");
         base.TurnOn();
     }
 
-    public override string ToString() => $"P-{Id},{Name},{IsOn},{OperationSystem}";
+    public override string ToString() => $"P-{Id},{Name},{IsOn},{OperatingSystem}";
 }
 
 public class EmptySystemException : Exception { public EmptySystemException(string? message) : base(message) { } }
@@ -252,7 +249,7 @@ public class DeviceManager
         var device = _devices.Find(d => d.Id == id && d is PersonalComputer);
         if (device is PersonalComputer pc)
         {
-            pc.OperationSystem = newOS;
+            pc.OperatingSystem = newOS;
             SaveToFile();
             Console.WriteLine($"Operating System updated for device ID {id}.");
         }
@@ -294,9 +291,25 @@ public class DeviceManager
 
     public void TurnOnDevice(int id)
     {
-        ToggleDevice(id, true);
-        Console.WriteLine($"Turned on device {id}");
+        var device = _devices.Find(d => d.Id == id);
+        if (device == null)
+        {
+            Console.WriteLine($"Device with ID {id} not found.");
+            return;
+        }
+        try
+        {
+            device.TurnOn();
+            SaveToFile();
+            Console.WriteLine($"Device with ID {id} is now ON.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Turning on device: {ex.Message}");
+            throw; 
+        }
     }
+
 
     public void TurnOffDevice(int id)
     {
@@ -310,8 +323,11 @@ public class DeviceManager
         if (device != null) { device.IsOn = state; SaveToFile(); }
     }
 
-    public List<ElectronicDevice> GetAllDevices() => _devices;
-
+    public int DeviceCount()
+    {
+        return _devices.Count;
+    }
+    
     public void ShowAllDevices()
     {
         Console.WriteLine("All devices:");
