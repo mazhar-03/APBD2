@@ -423,6 +423,7 @@ public class DeviceManager
             Console.WriteLine($"Error turning of device: {ex.Message}");
         }    
     }
+    public int DeviceCount => _devices.Count;
     
     public void ShowAllDevices()
     {
