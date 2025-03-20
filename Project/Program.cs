@@ -1,7 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 
 var manager = new DeviceManager("devices.txt");
-manager.ShowAllDevices();
+manager.AddDevice(new EmbeddedDevices(1, "EDDDD", true , "123.243.151.31", "MD Ltd. home"));
+
 
 public abstract class ElectronicDevice
 {
@@ -21,7 +22,7 @@ public abstract class ElectronicDevice
         IsOn = true;
     }
 
-    public void TurnOff()
+    public virtual void TurnOff()
     {
         IsOn = false;
     }
@@ -71,6 +72,10 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier
         BatteryPercentage -= 10;
         base.TurnOn();
     }
+    public override void TurnOff()
+    {
+        base.TurnOff();
+    }
 
     public override string ToString()
     {
@@ -106,6 +111,11 @@ public class PersonalComputer : ElectronicDevice
         if (string.IsNullOrWhiteSpace(OperatingSystem))
             throw new EmptySystemException("PC cannot be launched without an operating system.");
         base.TurnOn();
+    }
+
+    public override void TurnOff()
+    {
+        base.TurnOff();
     }
 
     public override string ToString()
@@ -156,6 +166,11 @@ public class EmbeddedDevices : ElectronicDevice
                 throw new ConnectionException("Invalid network name! Must connect to 'MD Ltd.'.");
             _networkName = value;
         }
+    }
+    
+    public override void TurnOff()
+    {
+        base.TurnOff();
     }
 
     public override string ToString()
@@ -245,10 +260,8 @@ public class DeviceManager
 
         if (type == "P")
         {
-            if (parts.Length < 4 || string.IsNullOrWhiteSpace(parts[3]))
-                throw new FormatException("Personal Computer must have an operating system.");
-        
-            return new PersonalComputer(id, name, isOn, parts[3]);
+            string os = parts.Length > 3 ? parts[3].Trim() : null;
+            return new PersonalComputer(id, name, isOn, os);
         }
 
         if (type == "ED")
@@ -300,12 +313,13 @@ public class DeviceManager
         }
     }
 
-    public void EditDevice(int id, string newName)
+    public void EditDevice(int id, object newName)
     {
         var device = _devices.Find(d => d.Id == id);
+        string newNewName = (string)newName;
         if (device != null)
         {
-            device.Name = newName;
+            device.Name = newNewName;
             SaveToFile();
             Console.WriteLine($"No: {id} has cahnged its name {newName}");
         }
@@ -313,12 +327,13 @@ public class DeviceManager
         Console.WriteLine($"Device with ID {id} not found");
     }
 
-    public void UpdateBattery(int id, int newBattery)
+    public void UpdateBattery(int id, object newBattery)
     {
         var device = _devices.Find(d => d.Id == id && d is Smartwatches);
+        int newBatteryString = (int)newBattery;
         if (device is Smartwatches watch)
         {
-            watch.BatteryPercentage = newBattery;
+            watch.BatteryPercentage = newBatteryString;
             SaveToFile();
             Console.WriteLine($"Battery updated for device ID {id}.");
         }
@@ -328,27 +343,29 @@ public class DeviceManager
         }
     }
 
-    public void UpdateOperatingSystem(int id, string newOS)
+    public void UpdateOperatingSystem(int id, object newOs)
     {
-        var device = _devices.Find(d => d.Id == id && d is PersonalComputer);
-        if (device is PersonalComputer pc)
-        {
-            pc.OperatingSystem = newOS;
-            SaveToFile();
-            Console.WriteLine($"Operating System updated for device ID {id}.");
-        }
-        else
+        var device = _devices.FirstOrDefault(d => d.Id == id && d is PersonalComputer);
+        if (device == null)
         {
             Console.WriteLine($"Device with ID {id} not found or not a Personal Computer.");
+            return;
         }
+
+        string osString = (string)newOs;
+
+        ((PersonalComputer)device).OperatingSystem = osString;
+        Console.WriteLine($"Updated OS for device ID {id} to {osString}");
+        SaveToFile();
     }
 
-    public void UpdateIpAddress(int id, string newIp)
+    public void UpdateIpAddress(int id, object newIp)
     {
         var device = _devices.Find(d => d.Id == id && d is EmbeddedDevices);
+        string ipString = (string)newIp;
         if (device is EmbeddedDevices ed)
         {
-            ed.IpName = newIp;
+            ed.IpName = ipString;
             SaveToFile();
             Console.WriteLine($"IP Address updated for device ID {id}.");
         }
@@ -358,12 +375,13 @@ public class DeviceManager
         }
     }
 
-    public void UpdateNetworkName(int id, string newNetwork)
+    public void UpdateNetworkName(int id, object newNetwork)
     {
         var device = _devices.Find(d => d.Id == id && d is EmbeddedDevices);
+        string networkString = (string)newNetwork;
         if (device is EmbeddedDevices ed)
         {
-            ed.NetworkName = newNetwork;
+            ed.NetworkName = networkString;
             SaveToFile();
             Console.WriteLine($"Network Name updated for device ID {id}.");
         }
@@ -373,12 +391,13 @@ public class DeviceManager
         }
     }
 
-    public void TurnOnDevice(int id)
+    public void TurnOnDevice(int id, string deviceType)
     {
-        var device = _devices.Find(d => d.Id == id);
+        var device = _devices.Find(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
+
         if (device == null)
         {
-            Console.WriteLine($"Device with ID {id} not found.");
+            Console.WriteLine($"Device with ID {id} and type {deviceType} not found.");
             return;
         }
 
@@ -386,32 +405,36 @@ public class DeviceManager
         {
             device.TurnOn();
             SaveToFile();
-            Console.WriteLine($"Device with ID {id} is now ON.");
+            Console.WriteLine($"Device with ID {device.Id} ({deviceType}) is now ON.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Turning on device: {ex.Message}");
-            throw;
+            Console.WriteLine($"Error turning on device: {ex.Message}");
         }
     }
 
-
-    public void TurnOffDevice(int id)
+    public void TurnOffDevice(int id, string deviceType)
     {
-        ToggleDevice(id, false);
-        Console.WriteLine($"Turned off device {id}");
-    }
+        var device = _devices.Find(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
 
-    private void ToggleDevice(int id, bool state)
-    {
-        var device = _devices.Find(d => d.Id == id);
-        if (device != null)
+        if (device == null)
         {
-            device.IsOn = state;
-            SaveToFile();
+            Console.WriteLine($"Device with ID {id} and type {deviceType} not found.");
+            return;
         }
-    }
 
+        try
+        {
+            device.TurnOff();
+            SaveToFile();
+            Console.WriteLine($"Device with ID {device.Id} ({deviceType}) is now OFF.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error turning of device: {ex.Message}");
+        }    
+    }
+    
     public void ShowAllDevices()
     {
         Console.WriteLine("All devices:");
