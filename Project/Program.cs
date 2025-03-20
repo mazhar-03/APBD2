@@ -1,7 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
 var manager = new DeviceManager("devices.txt");
-manager.AddDevice(new EmbeddedDevices(2, "EDDDD", true , "123.243.151.31", "MD Ltd. home"));
 
 
 public abstract class ElectronicDevice
@@ -252,7 +251,7 @@ public class DeviceManager
 
         if (type == "P")
         {
-            string os = parts.Length > 3 ? parts[3].Trim() : null;
+            string os = parts.Length >= 3 ? parts[3].Trim() : null;
             return new PersonalComputer(id, name, isOn, os);
         }
 
@@ -289,16 +288,18 @@ public class DeviceManager
         }
     }
 
-    public void RemoveDevice(int id)
+    public void RemoveDevice(int id, string deviceType)
     {
-        if (_devices.RemoveAll(d => d.Id == id) > 0)
+        int removedCount = _devices.RemoveAll(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
+
+        if (removedCount > 0)
         {
             SaveToFile();
-            Console.WriteLine($"Removed device {id}");
+            Console.WriteLine($"Removed {deviceType} with ID {id}");
         }
         else
         {
-            Console.WriteLine($"Device with ID {id} not found");
+            Console.WriteLine($"Device with ID {id} and type {deviceType} not found");
         }
     }
 
@@ -382,16 +383,19 @@ public class DeviceManager
 
     public void TurnOnDevice(int id, string deviceType)
     {
-        var device = _devices.Find(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
-
+        var device = _devices.Find(d => d.Id == id && d.GetType().Name == deviceType);
+    
         if (device == null)
         {
             Console.WriteLine($"Device with ID {id} and type {deviceType} not found.");
             return;
         }
-
         try
         {
+            if (device is PersonalComputer pc && string.IsNullOrWhiteSpace(pc.OperatingSystem))
+            {
+                throw new EmptySystemException($"{pc.Name} cannot be launched without an operating system.");
+            }
             device.TurnOn();
             SaveToFile();
             Console.WriteLine($"Device with ID {device.Id} ({deviceType}) is now ON.");
@@ -399,6 +403,7 @@ public class DeviceManager
         catch (Exception ex)
         {
             Console.WriteLine($"Error turning on device: {ex.Message}");
+            throw;
         }
     }
 
