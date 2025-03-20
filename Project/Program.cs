@@ -1,7 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 
 var manager = new DeviceManager("devices.txt");
-manager.AddDevice(new EmbeddedDevices(1, "EDDDD", true , "123.243.151.31", "MD Ltd. home"));
+manager.AddDevice(new EmbeddedDevices(2, "EDDDD", true , "123.243.151.31", "MD Ltd. home"));
 
 
 public abstract class ElectronicDevice
@@ -188,44 +188,43 @@ public class ConnectionException : Exception
 
 public class DeviceManager
 {
+    private string _filePath;
+    private List<ElectronicDevice> _devices;
     private const int MaxNumOfDevices = 15;
-    private List<ElectronicDevice> _devices = new();
-    private string filePath;
 
     public DeviceManager(string filePath)
     {
-        this.filePath = filePath;
+        _filePath = filePath;
+        _devices = new List<ElectronicDevice>();
         LoadFromFile();
     }
 
-    public int DeviceCount => _devices.Count;
-
     private void LoadFromFile()
     {
-        if (!File.Exists(filePath)) return;
+        if (!File.Exists(_filePath))
+        {
+            Console.WriteLine("Device data file not found. Creating an empty list.");
+            return;
+        }
 
-        string[] lines = File.ReadAllLines(filePath);
-        HashSet<(string, int)> existingDevices = new(); 
+        string[] lines = File.ReadAllLines(_filePath);
 
-        foreach (var line in lines)
+        foreach (string line in lines)
+        {
             try
             {
                 var device = ParseDevice(line);
-                if (device != null &&
-                    existingDevices.Add((device.GetType().Name, device.Id))) 
+                if (device != null)
                 {
                     _devices.Add(device);
                     Console.WriteLine($"Loaded: {device}");
                 }
-                else
-                {
-                    Console.WriteLine($"Same ID same Type can not be poossible: {line}");
-                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to parse line: {line} | Error: {ex.Message}");
+                Console.WriteLine($"Error parsing line: {line}. Exception: {ex.Message}");
             }
+        }
     }
 
     private ElectronicDevice ParseDevice(string line)
@@ -240,21 +239,14 @@ public class DeviceManager
             throw new FormatException("Invalid device type format.");
 
         var type = typeAndId[0].Trim();
-        var idString = typeAndId[1].Trim();
+        var id = Convert.ToInt32(typeAndId[1].Trim());
         var name = parts[1].Trim();
-        var isOnString = parts[2].Trim();
-
-        int id = Convert.ToInt32(idString);
-        bool isOn = Convert.ToBoolean(isOnString);
+        var isOn = parts[2].Trim().ToLower() == "true";
 
         if (type == "SW")
         {
-            if (parts.Length < 4)
-                throw new FormatException("Smartwatch missing battery percentage.");
-
-            string batteryString = parts[3].Replace("%", "").Trim();
-            int battery = int.Parse(batteryString); 
-
+            if (parts.Length < 4) throw new FormatException("Smartwatch missing battery percentage.");
+            int battery = Convert.ToInt32(parts[3].Replace("%", "").Trim());
             return new Smartwatches(id, name, isOn, battery);
         }
 
@@ -266,19 +258,16 @@ public class DeviceManager
 
         if (type == "ED")
         {
-            if (parts.Length < 5)
-                throw new FormatException("Embedded device missing fields.");
-
+            if (parts.Length < 5) throw new FormatException("Embedded device missing fields.");
             return new EmbeddedDevices(id, name, isOn, parts[3], parts[4]);
         }
 
         throw new FormatException($"Unknown device type: {type}");
     }
 
-
     public void SaveToFile()
     {
-        StreamWriter writer = new(filePath, false);
+        StreamWriter writer = new(_filePath, false);
         foreach (var device in _devices)
             writer.WriteLine(device.ToString());
         writer.Close();
