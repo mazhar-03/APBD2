@@ -1,6 +1,6 @@
 ﻿namespace Project;
 
-public abstract class ElectronicDevice
+public abstract class ElectronicDevice : IDevice
 {
     public ElectronicDevice(string id, string name, bool isOn)
     {

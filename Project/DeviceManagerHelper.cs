@@ -9,9 +9,9 @@ public class DeviceManagerHelper
         _filePath = filePath;
     }
 
-    public List<ElectronicDevice> LoadDevices()
+    public List<IDevice> LoadDevices()
     {
-        List<ElectronicDevice> devices = new();
+        List<IDevice> devices = new();
 
         if (!File.Exists(_filePath))
         {
@@ -41,14 +41,14 @@ public class DeviceManagerHelper
         return devices;
     }
 
-    public void SaveDevices(List<ElectronicDevice> devices)
+    public void SaveDevices(List<IDevice> devices)
     {
         using StreamWriter writer = new(_filePath, false);
         foreach (var device in devices)
             writer.WriteLine(device.ToString());
     }
 
-    private ElectronicDevice ParseDevice(string line)
+    private IDevice ParseDevice(string line)
     {
         string[] parts = line.Split(',');
 
