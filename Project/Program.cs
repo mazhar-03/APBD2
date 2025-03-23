@@ -1,28 +1,36 @@
 ﻿using System.Text.RegularExpressions;
 
 var manager = new DeviceManager("devices.txt");
+manager.ShowAllDevices();
+manager.TurnOffDevice("1", "EmbeddedDevices");
 
 
 public abstract class ElectronicDevice
 {
-    public ElectronicDevice(int id, string name, bool isOn)
+    public ElectronicDevice(string id, string name, bool isOn)
     {
-        Id = id < 0 ? throw new ArgumentException("Id cannot be negative") : id;
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("Id cannot be null or empty");
+        Id = id;
         Name = name ?? throw new ArgumentException("Name cannot be null");
         IsOn = isOn;
     }
 
-    public int Id { get; set; }
+    public string Id { get; set; }
     public string Name { get; set; }
     public bool IsOn { get; set; }
 
     public virtual void TurnOn()
     {
+        if (IsOn)
+            throw new InvalidOperationException("Device is already turned on.");
         IsOn = true;
     }
 
     public virtual void TurnOff()
     {
+        if (!IsOn)
+            throw new InvalidOperationException("Device is already turned off.");
         IsOn = false;
     }
 
@@ -37,7 +45,7 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier
     private int _batteryPercentage;
     private bool _notifiedLowBattery;
 
-    public Smartwatches(int id, string name, bool isOn, int batteryPercentage) : base(id, name, isOn)
+    public Smartwatches(string id, string name, bool isOn, int batteryPercentage) : base(id, name, isOn)
     {
         BatteryPercentage = batteryPercentage;
     }
@@ -96,7 +104,7 @@ public class EmptyBatteryException : Exception
 
 public class PersonalComputer : ElectronicDevice
 {
-    public PersonalComputer(int id, string name, bool isOn, string operatingSystem) : base(id, name, isOn)
+    public PersonalComputer(string id, string name, bool isOn, string operatingSystem) : base(id, name, isOn)
     {
         OperatingSystem = operatingSystem;
         if (isOn && string.IsNullOrWhiteSpace(operatingSystem))
@@ -135,7 +143,7 @@ public class EmbeddedDevices : ElectronicDevice
     private string _ipAddress;
     private string _networkName;
 
-    public EmbeddedDevices(int id, string name, bool isOn, string ipAddress, string connectionName) : base(id, name,
+    public EmbeddedDevices(string id, string name, bool isOn, string ipAddress, string connectionName) : base(id, name,
         isOn)
     {
         IpName = ipAddress;
@@ -238,7 +246,7 @@ public class DeviceManager
             throw new FormatException("Invalid device type format.");
 
         var type = typeAndId[0].Trim();
-        var id = Convert.ToInt32(typeAndId[1].Trim());
+        var id = typeAndId[1].Trim();
         var name = parts[1].Trim();
         var isOn = parts[2].Trim().ToLower() == "true";
 
@@ -288,7 +296,7 @@ public class DeviceManager
         }
     }
 
-    public void RemoveDevice(int id, string deviceType)
+    public void RemoveDevice(string id, string deviceType)
     {
         int removedCount = _devices.RemoveAll(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
 
@@ -303,7 +311,7 @@ public class DeviceManager
         }
     }
 
-    public void EditDevice(int id, object newName)
+    public void EditDevice(string id, object newName)
     {
         var device = _devices.Find(d => d.Id == id);
         string newNewName = (string)newName;
@@ -317,7 +325,7 @@ public class DeviceManager
         Console.WriteLine($"Device with ID {id} not found");
     }
 
-    public void UpdateBattery(int id, object newBattery)
+    public void UpdateBattery(string id, object newBattery)
     {
         var device = _devices.Find(d => d.Id == id && d is Smartwatches);
         int newBatteryString = (int)newBattery;
@@ -333,7 +341,7 @@ public class DeviceManager
         }
     }
 
-    public void UpdateOperatingSystem(int id, object newOs)
+    public void UpdateOperatingSystem(string id, object newOs)
     {
         var device = _devices.FirstOrDefault(d => d.Id == id && d is PersonalComputer);
         if (device == null)
@@ -349,7 +357,7 @@ public class DeviceManager
         SaveToFile();
     }
 
-    public void UpdateIpAddress(int id, object newIp)
+    public void UpdateIpAddress(string id, object newIp)
     {
         var device = _devices.Find(d => d.Id == id && d is EmbeddedDevices);
         string ipString = (string)newIp;
@@ -365,7 +373,7 @@ public class DeviceManager
         }
     }
 
-    public void UpdateNetworkName(int id, object newNetwork)
+    public void UpdateNetworkName(string id, object newNetwork)
     {
         var device = _devices.Find(d => d.Id == id && d is EmbeddedDevices);
         string networkString = (string)newNetwork;
@@ -381,53 +389,64 @@ public class DeviceManager
         }
     }
 
-    public void TurnOnDevice(int id, string deviceType)
+    public void TurnOnDevice(string id, string deviceType)
     {
-        var device = _devices.Find(d => d.Id == id && d.GetType().Name == deviceType);
-    
+        var device = _devices.Find(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
+
         if (device == null)
         {
-            Console.WriteLine($"Device with ID {id} and type {deviceType} not found.");
+            Console.WriteLine($"Device with ID '{id}' and type '{deviceType}' not found.");
             return;
         }
+
         try
         {
+            if (device.IsOn)
+            {
+                Console.WriteLine($"Device {id}-{deviceType} is already turned on.");
+                return;
+            }
             if (device is PersonalComputer pc && string.IsNullOrWhiteSpace(pc.OperatingSystem))
             {
                 throw new EmptySystemException($"{pc.Name} cannot be launched without an operating system.");
             }
             device.TurnOn();
             SaveToFile();
-            Console.WriteLine($"Device with ID {device.Id} ({deviceType}) is now ON.");
+            Console.WriteLine($"Device '{id}' ({deviceType}) is now ON.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error turning on device: {ex.Message}");
-            throw;
+            Console.WriteLine($"Error turning on device '{id}': {ex.Message}");
         }
     }
 
-    public void TurnOffDevice(int id, string deviceType)
+
+    public void TurnOffDevice(string id, string deviceType)
     {
         var device = _devices.Find(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
 
         if (device == null)
         {
-            Console.WriteLine($"Device with ID {id} and type {deviceType} not found.");
+            Console.WriteLine($"Device with ID '{id}' and type '{deviceType}' not found.");
             return;
         }
-
         try
         {
+            if (!device.IsOn)
+            {
+                Console.WriteLine($"Device {id}-{deviceType} is already turned off.");
+                return;
+            }
             device.TurnOff();
             SaveToFile();
-            Console.WriteLine($"Device with ID {device.Id} ({deviceType}) is now OFF.");
+            Console.WriteLine($"Device '{id}' ({deviceType}) is now OFF.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error turning of device: {ex.Message}");
-        }    
+            Console.WriteLine($"Error turning off device '{id}': {ex.Message}");
+        }
     }
+
     public int DeviceCount => _devices.Count;
     
     public void ShowAllDevices()
