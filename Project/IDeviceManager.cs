@@ -12,4 +12,5 @@ public interface IDeviceManager
     void TurnOnDevice(string id, string deviceType);
     void TurnOffDevice(string id, string deviceType);
     void ShowAllDevices();
+    int DeviceCount();
 }

@@ -3,15 +3,15 @@
 public class DeviceManager : IDeviceManager
 {
     private const int MaxNumOfDevices = 15;
-    private readonly List<IDevice> _devices;
-    private readonly DeviceManagerHelper _helper;
+    private List<IDevice> _devices;
+    private DeviceManagerHelper _helper;
 
     public DeviceManager(string filePath)
     {
         _helper = new DeviceManagerHelper(filePath);
         _devices = _helper.LoadDevices();
     }
-
+    
     private void Save()
     {
         _helper.SaveDevices(_devices);
@@ -158,6 +158,7 @@ public class DeviceManager : IDeviceManager
         catch (Exception ex)
         {
             Console.WriteLine($"Error turning on device '{id}': {ex.Message}");
+            throw;
         }
     }
 
@@ -202,4 +203,9 @@ public class DeviceManager : IDeviceManager
         return _devices.Find(d =>
             d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
     }
+
+    public int DeviceCount()
+    {
+        return _devices.Count;    
+    } 
 }
