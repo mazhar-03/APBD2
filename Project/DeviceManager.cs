@@ -3,7 +3,7 @@
 public class DeviceManager
 {
     private const int MaxNumOfDevices = 15;
-    private List<ElectronicDevice> _devices;
+    private List<IDevice> _devices;
     private DeviceManagerHelper _helper;
 
     public DeviceManager(string filePath)
@@ -14,7 +14,7 @@ public class DeviceManager
 
     private void Save() => _helper.SaveDevices(_devices);
 
-    public void AddDevice(ElectronicDevice newDevice)
+    public void AddDevice(IDevice newDevice)
     {
         if (_devices.Count < MaxNumOfDevices &&
             !_devices.Any(d => d.Id == newDevice.Id && d.GetType() == newDevice.GetType()))
@@ -50,15 +50,19 @@ public class DeviceManager
     {
         var device = _devices.Find(d => d.Id == id);
         var newNewName = (string)newName;
+
         if (device != null)
         {
             device.Name = newNewName;
             Save();
-            Console.WriteLine($"No: {id} has cahnged its name {newName}");
+            Console.WriteLine($"No: {id} has changed its name to {newName}");
         }
-
-        Console.WriteLine($"Device with ID {id} not found");
+        else
+        {
+            Console.WriteLine($"Device with ID {id} not found");
+        }
     }
+
 
     public void UpdateBattery(string id, object newBattery)
     {
@@ -190,7 +194,7 @@ public class DeviceManager
         Console.WriteLine();
     }
 
-    private ElectronicDevice FindDevice(string id, string deviceType)
+    private IDevice FindDevice(string id, string deviceType)
     {
         return _devices.Find(d =>
             d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
