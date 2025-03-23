@@ -2,7 +2,7 @@
 
 public static class DeviceManagerFactory
 {
-    public static DeviceManager Create(string filePath)
+    public static IDeviceManager Create(string filePath)
     {
         return new DeviceManager(filePath);
     }

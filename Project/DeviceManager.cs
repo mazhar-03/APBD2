@@ -1,10 +1,10 @@
 ﻿namespace Project;
 
-public class DeviceManager
+public class DeviceManager : IDeviceManager
 {
     private const int MaxNumOfDevices = 15;
-    private List<IDevice> _devices;
-    private DeviceManagerHelper _helper;
+    private readonly List<IDevice> _devices;
+    private readonly DeviceManagerHelper _helper;
 
     public DeviceManager(string filePath)
     {
@@ -12,7 +12,10 @@ public class DeviceManager
         _devices = _helper.LoadDevices();
     }
 
-    private void Save() => _helper.SaveDevices(_devices);
+    private void Save()
+    {
+        _helper.SaveDevices(_devices);
+    }
 
     public void AddDevice(IDevice newDevice)
     {
@@ -46,20 +49,20 @@ public class DeviceManager
         }
     }
 
-    public void EditDevice(string id, object newName)
+    public void EditDevice(string id, string deviceType ,object newName)
     {
-        var device = _devices.Find(d => d.Id == id);
+        var device = FindDevice(id, deviceType);
         var newNewName = (string)newName;
 
         if (device != null)
         {
             device.Name = newNewName;
             Save();
-            Console.WriteLine($"No: {id} has changed its name to {newName}");
+            Console.WriteLine($"No: {id}-{deviceType} has changed its name to {newName}");
         }
         else
         {
-            Console.WriteLine($"Device with ID {id} not found");
+            Console.WriteLine($"Device with ID {id}-{deviceType} not found");
         }
     }
 

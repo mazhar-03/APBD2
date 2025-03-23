@@ -2,5 +2,7 @@
 
 public class EmptyBatteryException : Exception
 {
-    public EmptyBatteryException(string? message) : base(message) {}
+    public EmptyBatteryException(string? message) : base(message)
+    {
+    }
 }

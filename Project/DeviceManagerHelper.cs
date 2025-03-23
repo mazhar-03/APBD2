@@ -22,7 +22,6 @@ public class DeviceManagerHelper
         var lines = File.ReadAllLines(_filePath);
 
         foreach (var line in lines)
-        {
             try
             {
                 var device = ParseDevice(line);
@@ -36,7 +35,6 @@ public class DeviceManagerHelper
             {
                 Console.WriteLine($"Error parsing line: {line}. Exception: {ex.Message}");
             }
-        }
 
         return devices;
     }
