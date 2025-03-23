@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-var manager = new DeviceManager("devices.txt");
+var manager = DeviceManagerFactory.Create("devices.txt");
 manager.ShowAllDevices();
 manager.TurnOffDevice("1", "EmbeddedDevices");
 
@@ -391,7 +391,7 @@ public class DeviceManager
 
     public void TurnOnDevice(string id, string deviceType)
     {
-        var device = _devices.Find(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
+        var device = FindDevice(id, deviceType);
 
         if (device == null)
         {
@@ -423,7 +423,7 @@ public class DeviceManager
 
     public void TurnOffDevice(string id, string deviceType)
     {
-        var device = _devices.Find(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
+        var device = FindDevice(id, deviceType);
 
         if (device == null)
         {
@@ -454,5 +454,18 @@ public class DeviceManager
         Console.WriteLine("All devices:");
         _devices.ForEach(Console.WriteLine);
         Console.WriteLine();
+    }
+
+    private ElectronicDevice FindDevice(string id, string deviceType)
+    {
+        return _devices.Find(d => d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
+    }
+}
+
+public static class DeviceManagerFactory
+{
+    public static DeviceManager Create(string filePath)
+    {
+        return new DeviceManager(filePath);
     }
 }
