@@ -1,5 +1,8 @@
 ﻿namespace Project;
 
+/// <summary>
+/// Manages devices like PCs, Smartwatches, and Embedded systems.
+/// </summary>
 public class DeviceManager : IDeviceManager
 {
     private const int MaxNumOfDevices = 15;
@@ -12,11 +15,17 @@ public class DeviceManager : IDeviceManager
         _devices = _helper.LoadDevices();
     }
     
+    /// <summary>
+    /// Saves the current list of devices to file.
+    /// </summary>
     private void Save()
     {
         _helper.SaveDevices(_devices);
     }
 
+    /// <summary>
+    /// Adds a new device if the list isn't full and the ID is unique.
+    /// </summary>
     public void AddDevice(IDevice newDevice)
     {
         if (_devices.Count < MaxNumOfDevices &&
@@ -33,6 +42,9 @@ public class DeviceManager : IDeviceManager
         }
     }
 
+    /// <summary>
+    /// Removes a device by ID and type.
+    /// </summary>
     public void RemoveDevice(string id, string deviceType)
     {
         var removedCount = _devices.RemoveAll(d =>
@@ -48,7 +60,10 @@ public class DeviceManager : IDeviceManager
             Console.WriteLine($"Device with ID {id} and type {deviceType} not found");
         }
     }
-
+    
+    /// <summary>
+    /// Changes the name of a specific device.
+    /// </summary>
     public void EditDevice(string id, string deviceType ,object newName)
     {
         var device = FindDevice(id, deviceType);
@@ -65,8 +80,10 @@ public class DeviceManager : IDeviceManager
             Console.WriteLine($"Device with ID {id}-{deviceType} not found");
         }
     }
-
-
+    
+    /// <summary>
+    /// Updates the battery level of a smartwatch.
+    /// </summary>
     public void UpdateBattery(string id, object newBattery)
     {
         var device = _devices.Find(d => d.Id == id && d is Smartwatches);
@@ -83,6 +100,9 @@ public class DeviceManager : IDeviceManager
         }
     }
 
+    /// <summary>
+    /// Updates the OS of a personal computer.
+    /// </summary>
     public void UpdateOperatingSystem(string id, object newOs)
     {
         var device = _devices.FirstOrDefault(d => d.Id == id && d is PersonalComputer);
@@ -99,6 +119,9 @@ public class DeviceManager : IDeviceManager
         Save();
     }
 
+    /// <summary>
+    /// Updates the IP address of an embedded device.
+    /// </summary>
     public void UpdateIpAddress(string id, object newIp)
     {
         var device = _devices.Find(d => d.Id == id && d is EmbeddedDevices);
@@ -115,6 +138,9 @@ public class DeviceManager : IDeviceManager
         }
     }
 
+    /// <summary>
+    /// Updates the network name of an embedded device.
+    /// </summary>
     public void UpdateNetworkName(string id, object newNetwork)
     {
         var device = _devices.Find(d => d.Id == id && d is EmbeddedDevices);
@@ -131,6 +157,9 @@ public class DeviceManager : IDeviceManager
         }
     }
 
+    /// <summary>
+    /// Turns on a device by ID and type.
+    /// </summary>
     public void TurnOnDevice(string id, string deviceType)
     {
         var device = FindDevice(id, deviceType);
@@ -161,8 +190,10 @@ public class DeviceManager : IDeviceManager
             throw;
         }
     }
-
-
+    
+    /// <summary>
+    /// Turns off a device by ID and type.
+    /// </summary>
     public void TurnOffDevice(string id, string deviceType)
     {
         var device = FindDevice(id, deviceType);
@@ -191,6 +222,9 @@ public class DeviceManager : IDeviceManager
         }
     }
 
+    /// <summary>
+    /// Prints all devices to the console.
+    /// </summary>
     public void ShowAllDevices()
     {
         Console.WriteLine("All devices:");
@@ -198,12 +232,18 @@ public class DeviceManager : IDeviceManager
         Console.WriteLine();
     }
 
-    private IDevice FindDevice(string id, string deviceType)
+    /// <summary>
+    /// Finds a device by ID and type. Used internally.
+    /// </summary>
+    private IDevice? FindDevice(string id, string deviceType)
     {
         return _devices.Find(d =>
             d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Gets the number of devices currently managed.
+    /// </summary>
     public int DeviceCount()
     {
         return _devices.Count;    

@@ -1,14 +1,25 @@
 ﻿namespace Project;
 
+/// <summary>
+/// Handles reading from and writing to the device data file.
+/// </summary>
 public class DeviceManagerHelper
 {
-    private readonly string _filePath;
+    private string _filePath;
 
+    /// <summary>
+    /// Sets up the helper with the file path for device storage.
+    /// </summary>
+    /// <param name="filePath">The path to the device data file.</param>
     public DeviceManagerHelper(string filePath)
     {
         _filePath = filePath;
     }
 
+    /// <summary>
+    /// Loads all devices from the file.
+    /// </summary>
+    /// <returns>A list of devices loaded from the file.</returns>
     public List<IDevice> LoadDevices()
     {
         List<IDevice> devices = new();
@@ -39,6 +50,10 @@ public class DeviceManagerHelper
         return devices;
     }
 
+    /// <summary>
+    /// Saves all current devices to the file.
+    /// </summary>
+    /// <param name="devices">The list of devices to write.</param>
     public void SaveDevices(List<IDevice> devices)
     {
         using StreamWriter writer = new(_filePath, false);
@@ -46,6 +61,12 @@ public class DeviceManagerHelper
             writer.WriteLine(device.ToString());
     }
 
+    /// <summary>
+    /// Parses one line of text into a device.
+    /// </summary>
+    /// <param name="line">The text line to parse.</param>
+    /// <returns>The parsed device, or throws if the format is wrong.</returns>
+    /// <exception cref="FormatException">Thrown if the line is not correctly formatted.</exception>
     private IDevice ParseDevice(string line)
     {
         string[] parts = line.Split(',');
