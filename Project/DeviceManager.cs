@@ -7,12 +7,12 @@ public class DeviceManager : IDeviceManager
 {
     private const int MaxNumOfDevices = 15;
     private List<IDevice> _devices;
-    private DeviceManagerHelper _helper;
+    private DeviceTextFileService _service;
 
     public DeviceManager(string filePath)
     {
-        _helper = new DeviceManagerHelper(filePath);
-        _devices = _helper.LoadDevices();
+        _service = new DeviceTextFileService(filePath);
+        _devices = _service.LoadDevices();
     }
     
     /// <summary>
@@ -20,7 +20,7 @@ public class DeviceManager : IDeviceManager
     /// </summary>
     private void Save()
     {
-        _helper.SaveDevices(_devices);
+        _service.SaveDevices(_devices);
     }
 
     /// <summary>

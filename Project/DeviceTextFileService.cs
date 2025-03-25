@@ -3,7 +3,7 @@
 /// <summary>
 /// Handles reading from and writing to the device data file.
 /// </summary>
-public class DeviceManagerHelper
+public class DeviceTextFileService
 {
     private string _filePath;
 
@@ -11,7 +11,7 @@ public class DeviceManagerHelper
     /// Sets up the helper with the file path for device storage.
     /// </summary>
     /// <param name="filePath">The path to the device data file.</param>
-    public DeviceManagerHelper(string filePath)
+    public DeviceTextFileService(string filePath)
     {
         _filePath = filePath;
     }
