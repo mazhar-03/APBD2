@@ -3,7 +3,7 @@
 /// <summary>
 /// Base class for all electronic devices.
 /// </summary>
-public abstract class ElectronicDevice : IDevice
+public abstract class ElectronicDevice
 {
     /// <summary>
     /// Sets the basic info of a device.

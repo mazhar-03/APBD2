@@ -3,7 +3,7 @@
 /// <summary>
 /// A smartwatch device that has a battery and can notify when low.
 /// </summary>
-public class Smartwatches : ElectronicDevice, IPowerNotifier
+public class Smartwatches : ElectronicDevice, IPowerNotifier, IDevice
 {
     private int _batteryPercentage;
     private bool _notifiedLowBattery;

@@ -3,7 +3,7 @@
 /// <summary>
 /// A personal computer that can run an operating system.
 /// </summary>
-public class PersonalComputer : ElectronicDevice
+public class PersonalComputer : ElectronicDevice, IDevice
 {
     /// <summary>
     /// Creates a new PC with its basic info and OS.
