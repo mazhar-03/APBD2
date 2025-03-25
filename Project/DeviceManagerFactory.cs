@@ -3,7 +3,7 @@
 /// <summary>
 ///     Helps create a device manager instance.
 /// </summary>
-public  class DeviceManagerFactory
+public class DeviceManagerFactory
 {
     /// <summary>
     ///     Creates a new device manager with a given file path.

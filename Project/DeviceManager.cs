@@ -18,6 +18,7 @@ public class DeviceManager : IDeviceManager
     /// <summary>
     ///     Adds a new device if the list isn't full and the ID is unique.
     /// </summary>
+
     public void AddDevice(IDevice newDevice)
     {
         if (_devices.Count < MaxNumOfDevices &&

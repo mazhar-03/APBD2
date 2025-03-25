@@ -16,75 +16,81 @@ public class DeviceManagerService : IDeviceManager
     }
 
     // Add a new device
+    private const int MaxNumOfDevices = 15;
+
     public void AddDevice(IDevice newDevice)
     {
-        _devices.Add(newDevice);
-        _deviceRepository.SaveDevices(_devices); // Save after adding
+        if (_devices.Count < MaxNumOfDevices &&
+            !_devices.Any(d => d.Id == newDevice.Id && d.GetType() == newDevice.GetType()))
+        {
+            _devices.Add(newDevice);
+            Console.WriteLine($"Added device {newDevice.Name}-{newDevice.Id}");
+            _deviceRepository.SaveDevices(_devices); // Save after removing
+        }
+        else
+        {
+            Console.WriteLine(
+                $"Cannot add device {newDevice.Name}-{newDevice.Id}: Duplicate ID for the same type exists.");
+        }
     }
 
-    // Remove a device by its ID and type
     public void RemoveDevice(string id, string deviceType)
     {
         var deviceToRemove = _devices.FirstOrDefault(d => d.Id == id);
         if (deviceToRemove != null)
         {
             _devices.Remove(deviceToRemove);
-            _deviceRepository.SaveDevices(_devices); // Save after removing
+            _deviceRepository.SaveDevices(_devices); 
         }
     }
 
-    // Edit the name of a device
     public void EditDevice(string id, string deviceType, object newName)
     {
         var device = _devices.FirstOrDefault(d => d.Id == id);
         if (device != null)
         {
             device.Name = newName.ToString();
-            _deviceRepository.SaveDevices(_devices); // Save after editing
+            _deviceRepository.SaveDevices(_devices); 
         }
     }
 
-    // Update battery level of a smartwatch
     public void UpdateBattery(string id, object newBattery)
     {
         var device = _devices.FirstOrDefault(d => d.Id == id && d is Smartwatches);
         if (device != null)
         {
             ((Smartwatches)device).BatteryPercentage = (int)newBattery;
-            _deviceRepository.SaveDevices(_devices); // Save after updating battery
+            _deviceRepository.SaveDevices(_devices); 
         }
     }
 
-    // Update operating system of a PC
     public void UpdateOperatingSystem(string id, object newOs)
     {
         var device = _devices.FirstOrDefault(d => d.Id == id && d is PersonalComputer);
         if (device != null)
         {
             ((PersonalComputer)device).OperatingSystem = newOs.ToString();
-            _deviceRepository.SaveDevices(_devices); // Save after updating OS
+            _deviceRepository.SaveDevices(_devices); 
         }
     }
 
-    // Update IP address of an embedded device
     public void UpdateIpAddress(string id, object newIp)
     {
         var device = _devices.FirstOrDefault(d => d.Id == id && d is EmbeddedDevices);
         if (device != null)
         {
             ((EmbeddedDevices)device).IpName = newIp.ToString();
-            _deviceRepository.SaveDevices(_devices); // Save after updating IP address
+            _deviceRepository.SaveDevices(_devices); 
         }
     }
 
-    // Update network name of an embedded device
     public void UpdateNetworkName(string id, object newNetwork)
     {
         var device = _devices.FirstOrDefault(d => d.Id == id && d is EmbeddedDevices);
         if (device != null)
         {
             ((EmbeddedDevices)device).NetworkName = newNetwork.ToString();
-            _deviceRepository.SaveDevices(_devices); // Save after updating network name
+            _deviceRepository.SaveDevices(_devices); 
         }
     }
 
