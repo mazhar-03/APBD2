@@ -1,7 +1,7 @@
 ﻿namespace Project;
 
 /// <summary>
-/// A smartwatch device that has a battery and can notify when low.
+///     A smartwatch device that has a battery and can notify when low.
 /// </summary>
 public class Smartwatches : ElectronicDevice, IPowerNotifier, IDevice
 {
@@ -9,7 +9,7 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier, IDevice
     private bool _notifiedLowBattery;
 
     /// <summary>
-    /// Sets up the smartwatch with its info and battery level.
+    ///     Sets up the smartwatch with its info and battery level.
     /// </summary>
     /// <param name="id">The ID of the device.</param>
     /// <param name="name">The name of the smartwatch.</param>
@@ -21,7 +21,7 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier, IDevice
     }
 
     /// <summary>
-    /// The current battery level. Sends low battery alert if below 20%.
+    ///     The current battery level. Sends low battery alert if below 20%.
     /// </summary>
     /// <exception cref="ArgumentException">Thrown if value is not between 0 and 100.</exception>
     public int BatteryPercentage
@@ -42,16 +42,7 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier, IDevice
     }
 
     /// <summary>
-    /// Prints a notification message to the console.
-    /// </summary>
-    /// <param name="msg">The message to show.</param>
-    public void Notify(string msg)
-    {
-        Console.WriteLine(msg);
-    }
-
-    /// <summary>
-    /// Turns the watch on. Needs at least 11% battery to work.
+    ///     Turns the watch on. Needs at least 11% battery to work.
     /// </summary>
     /// <exception cref="EmptyBatteryException">Thrown if battery is too low.</exception>
     public override void TurnOn()
@@ -63,10 +54,19 @@ public class Smartwatches : ElectronicDevice, IPowerNotifier, IDevice
     }
 
     /// <summary>
-    /// Returns device details in file-friendly format.
+    ///     Returns device details in file-friendly format.
     /// </summary>
     public override string ToString()
     {
         return $"SW-{Id},{Name},{IsOn},{BatteryPercentage}%";
+    }
+
+    /// <summary>
+    ///     Prints a notification message to the console.
+    /// </summary>
+    /// <param name="msg">The message to show.</param>
+    public void Notify(string msg)
+    {
+        Console.WriteLine(msg);
     }
 }

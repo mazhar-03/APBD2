@@ -1,12 +1,12 @@
 ﻿namespace Project;
 
 /// <summary>
-/// Base class for all electronic devices.
+///     Base class for all electronic devices.
 /// </summary>
 public abstract class ElectronicDevice
 {
     /// <summary>
-    /// Sets the basic info of a device.
+    ///     Sets the basic info of a device.
     /// </summary>
     /// <param name="id">The device ID.</param>
     /// <param name="name">The device name.</param>
@@ -21,22 +21,22 @@ public abstract class ElectronicDevice
     }
 
     /// <summary>
-    /// The ID of the device.
+    ///     The ID of the device.
     /// </summary>
     public string Id { get; set; }
 
     /// <summary>
-    /// The name of the device.
+    ///     The name of the device.
     /// </summary>
     public string Name { get; set; }
 
     /// <summary>
-    /// Whether the device is currently on.
+    ///     Whether the device is currently on.
     /// </summary>
     public bool IsOn { get; set; }
 
     /// <summary>
-    /// Turns the device on. Throws if it's already on.
+    ///     Turns the device on. Throws if it's already on.
     /// </summary>
     public virtual void TurnOn()
     {
@@ -46,7 +46,7 @@ public abstract class ElectronicDevice
     }
 
     /// <summary>
-    /// Turns the device off. Throws if it's already off.
+    ///     Turns the device off. Throws if it's already off.
     /// </summary>
     public virtual void TurnOff()
     {
@@ -56,7 +56,7 @@ public abstract class ElectronicDevice
     }
 
     /// <summary>
-    /// Returns basic info about the device as a string.
+    ///     Returns basic info about the device as a string.
     /// </summary>
     public override string ToString()
     {

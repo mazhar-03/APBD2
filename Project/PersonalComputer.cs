@@ -1,12 +1,12 @@
 ﻿namespace Project;
 
 /// <summary>
-/// A personal computer that can run an operating system.
+///     A personal computer that can run an operating system.
 /// </summary>
 public class PersonalComputer : ElectronicDevice, IDevice
 {
     /// <summary>
-    /// Creates a new PC with its basic info and OS.
+    ///     Creates a new PC with its basic info and OS.
     /// </summary>
     /// <param name="id">The device ID.</param>
     /// <param name="name">The name of the PC.</param>
@@ -21,12 +21,12 @@ public class PersonalComputer : ElectronicDevice, IDevice
     }
 
     /// <summary>
-    /// The operating system installed on the PC.
+    ///     The operating system installed on the PC.
     /// </summary>
     public string OperatingSystem { get; set; }
 
     /// <summary>
-    /// Turns the PC on. Throws if no OS is installed.
+    ///     Turns the PC on. Throws if no OS is installed.
     /// </summary>
     /// <exception cref="EmptySystemException">Thrown if no OS is set.</exception>
     public override void TurnOn()
@@ -37,7 +37,7 @@ public class PersonalComputer : ElectronicDevice, IDevice
     }
 
     /// <summary>
-    /// Returns PC details in the file format.
+    ///     Returns PC details in the file format.
     /// </summary>
     public override string ToString()
     {

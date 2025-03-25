@@ -1,37 +1,37 @@
 ﻿namespace Project;
 
 /// <summary>
-/// Basic things every device should have and be able to do.
+///     Basic things every device should have and be able to do.
 /// </summary>
 public interface IDevice
 {
     /// <summary>
-    /// The unique ID of the device.
+    ///     The unique ID of the device.
     /// </summary>
     string Id { get; set; }
 
     /// <summary>
-    /// The name of the device.
+    ///     The name of the device.
     /// </summary>
     string Name { get; set; }
 
     /// <summary>
-    /// Whether the device is currently on.
+    ///     Whether the device is currently on.
     /// </summary>
     bool IsOn { get; set; }
 
     /// <summary>
-    /// Turns the device on.
+    ///     Turns the device on.
     /// </summary>
     void TurnOn();
 
     /// <summary>
-    /// Turns the device off.
+    ///     Turns the device off.
     /// </summary>
     void TurnOff();
 
     /// <summary>
-    /// Returns basic info about the device as a string.
+    ///     Returns basic info about the device as a string.
     /// </summary>
     /// <returns>Formatted device info.</returns>
     string ToString();

@@ -1,30 +1,22 @@
 ﻿namespace Project;
 
 /// <summary>
-/// Manages devices like PCs, Smartwatches, and Embedded systems.
+///     Manages devices like PCs, Smartwatches, and Embedded systems.
 /// </summary>
 public class DeviceManager : IDeviceManager
 {
     private const int MaxNumOfDevices = 15;
-    private List<IDevice> _devices;
-    private DeviceTextFileService _service;
+    private readonly List<IDevice> _devices;
+    private readonly DeviceTextFileService _service;
 
     public DeviceManager(string filePath)
     {
         _service = new DeviceTextFileService(filePath);
         _devices = _service.LoadDevices();
     }
-    
-    /// <summary>
-    /// Saves the current list of devices to file.
-    /// </summary>
-    private void Save()
-    {
-        _service.SaveDevices(_devices);
-    }
 
     /// <summary>
-    /// Adds a new device if the list isn't full and the ID is unique.
+    ///     Adds a new device if the list isn't full and the ID is unique.
     /// </summary>
     public void AddDevice(IDevice newDevice)
     {
@@ -43,7 +35,7 @@ public class DeviceManager : IDeviceManager
     }
 
     /// <summary>
-    /// Removes a device by ID and type.
+    ///     Removes a device by ID and type.
     /// </summary>
     public void RemoveDevice(string id, string deviceType)
     {
@@ -60,11 +52,11 @@ public class DeviceManager : IDeviceManager
             Console.WriteLine($"Device with ID {id} and type {deviceType} not found");
         }
     }
-    
+
     /// <summary>
-    /// Changes the name of a specific device.
+    ///     Changes the name of a specific device.
     /// </summary>
-    public void EditDevice(string id, string deviceType ,object newName)
+    public void EditDevice(string id, string deviceType, object newName)
     {
         var device = FindDevice(id, deviceType);
         var newNewName = (string)newName;
@@ -80,9 +72,9 @@ public class DeviceManager : IDeviceManager
             Console.WriteLine($"Device with ID {id}-{deviceType} not found");
         }
     }
-    
+
     /// <summary>
-    /// Updates the battery level of a smartwatch.
+    ///     Updates the battery level of a smartwatch.
     /// </summary>
     public void UpdateBattery(string id, object newBattery)
     {
@@ -101,7 +93,7 @@ public class DeviceManager : IDeviceManager
     }
 
     /// <summary>
-    /// Updates the OS of a personal computer.
+    ///     Updates the OS of a personal computer.
     /// </summary>
     public void UpdateOperatingSystem(string id, object newOs)
     {
@@ -120,7 +112,7 @@ public class DeviceManager : IDeviceManager
     }
 
     /// <summary>
-    /// Updates the IP address of an embedded device.
+    ///     Updates the IP address of an embedded device.
     /// </summary>
     public void UpdateIpAddress(string id, object newIp)
     {
@@ -139,7 +131,7 @@ public class DeviceManager : IDeviceManager
     }
 
     /// <summary>
-    /// Updates the network name of an embedded device.
+    ///     Updates the network name of an embedded device.
     /// </summary>
     public void UpdateNetworkName(string id, object newNetwork)
     {
@@ -158,7 +150,7 @@ public class DeviceManager : IDeviceManager
     }
 
     /// <summary>
-    /// Turns on a device by ID and type.
+    ///     Turns on a device by ID and type.
     /// </summary>
     public void TurnOnDevice(string id, string deviceType)
     {
@@ -190,9 +182,9 @@ public class DeviceManager : IDeviceManager
             throw;
         }
     }
-    
+
     /// <summary>
-    /// Turns off a device by ID and type.
+    ///     Turns off a device by ID and type.
     /// </summary>
     public void TurnOffDevice(string id, string deviceType)
     {
@@ -223,7 +215,7 @@ public class DeviceManager : IDeviceManager
     }
 
     /// <summary>
-    /// Prints all devices to the console.
+    ///     Prints all devices to the console.
     /// </summary>
     public void ShowAllDevices()
     {
@@ -233,19 +225,27 @@ public class DeviceManager : IDeviceManager
     }
 
     /// <summary>
-    /// Finds a device by ID and type. Used internally.
+    ///     Gets the number of devices currently managed.
+    /// </summary>
+    public int DeviceCount()
+    {
+        return _devices.Count;
+    }
+
+    /// <summary>
+    ///     Saves the current list of devices to file.
+    /// </summary>
+    private void Save()
+    {
+        _service.SaveDevices(_devices);
+    }
+
+    /// <summary>
+    ///     Finds a device by ID and type. Used internally.
     /// </summary>
     private IDevice? FindDevice(string id, string deviceType)
     {
         return _devices.Find(d =>
             d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));
     }
-
-    /// <summary>
-    /// Gets the number of devices currently managed.
-    /// </summary>
-    public int DeviceCount()
-    {
-        return _devices.Count;    
-    } 
 }

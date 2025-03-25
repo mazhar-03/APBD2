@@ -1,14 +1,14 @@
 ﻿namespace Project;
 
 /// <summary>
-/// Handles reading from and writing to the device data file.
+///     Handles reading from and writing to the device data file.
 /// </summary>
-public class DeviceTextFileService
+public class DeviceTextFileService : IDeviceRepository
 {
-    private string _filePath;
+    private readonly string _filePath;
 
     /// <summary>
-    /// Sets up the helper with the file path for device storage.
+    ///     Sets up the helper with the file path for device storage.
     /// </summary>
     /// <param name="filePath">The path to the device data file.</param>
     public DeviceTextFileService(string filePath)
@@ -17,7 +17,7 @@ public class DeviceTextFileService
     }
 
     /// <summary>
-    /// Loads all devices from the file.
+    ///     Loads all devices from the file.
     /// </summary>
     /// <returns>A list of devices loaded from the file.</returns>
     public List<IDevice> LoadDevices()
@@ -51,25 +51,31 @@ public class DeviceTextFileService
     }
 
     /// <summary>
-    /// Saves all current devices to the file.
+    ///     Saves all current devices to the file.
     /// </summary>
     /// <param name="devices">The list of devices to write.</param>
     public void SaveDevices(List<IDevice> devices)
     {
-        using StreamWriter writer = new(_filePath, false);
-        foreach (var device in devices)
-            writer.WriteLine(device.ToString());
+        var writer = new StreamWriter(_filePath, false);
+        try
+        {
+            foreach (var device in devices) writer.WriteLine(device.ToString());
+        }
+        finally
+        {
+            writer.Close();
+        }
     }
 
     /// <summary>
-    /// Parses one line of text into a device.
+    ///     Parses one line of text into a device.
     /// </summary>
     /// <param name="line">The text line to parse.</param>
     /// <returns>The parsed device, or throws if the format is wrong.</returns>
     /// <exception cref="FormatException">Thrown if the line is not correctly formatted.</exception>
     private IDevice ParseDevice(string line)
     {
-        string[] parts = line.Split(',');
+        var parts = line.Split(',');
 
         if (parts.Length < 3)
             throw new FormatException("Incomplete device data.");
