@@ -92,7 +92,7 @@ public class DeviceTextFileService : IDeviceRepository
         return type switch
         {
             "SW" => new Smartwatches(id, name, isOn, int.Parse(parts[3].Replace("%", "").Trim())),
-            "P" => new PersonalComputer(id, name, isOn, parts.Length >= 4 ? parts[3].Trim() : null),
+            "P" => new PersonalComputer(id, name, isOn, parts.Length >= 3 ? parts[3].Trim() : null),
             "ED" => new EmbeddedDevices(id, name, isOn, parts[3], parts[4]),
             _ => throw new FormatException($"Unknown device type: {type}")
         };

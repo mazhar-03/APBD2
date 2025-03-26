@@ -7,6 +7,26 @@
     &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.CheckEmptyBatteryException&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=6d1b8532_002D3aa8_002D483e_002D84f0_002Df38987be9361/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="CheckAddDevice" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.CheckAddDevice&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.CheckAddDeviceWithExistingIdSameType&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.CheckAddDeviceWhenStorageFull&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.CheckAddDeviceWithExistingIdDiffType&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.CheckRemoveDevice&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.UpdateBatteryForSmartwatches&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.UpdateOperatingSystemForComputers&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.UpdateIpAddressForEmbeddedDevices&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.UpdateNonValidIpAddressForEmbeddedDevices&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.UpdateNetworkNameForEmbeddedDevices&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.UpdateNonValidNetworkNameForEmbeddedDevices&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.UpdateTurnOn&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.UpdateTurnOff&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.TurnOnPcWithoutAnOs&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.CheckSaveToFileWorksCorrectly&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::DFA6F457-6840-452F-AB6B-8ADF67A122B5::net8.0::DeviceManagerTests.DeviceManagerTests.CheckSaveToFileWorksCorrectly2&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=9d8e6e8c_002D3113_002D4e15_002Db237_002De25ed42e5fd6/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="TurnOnPcWithoutAnOs" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;Solution /&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
