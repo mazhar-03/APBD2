@@ -1,4 +1,6 @@
 ﻿using Project;
 
-IDeviceManager manager = DeviceManagerFactory.Create("devices.txt");
-manager.ShowAllDevices();
+IDeviceRepository deviceRepository = new DeviceTextFileService("devices.txt");
+var factory = new DeviceManagerFactory(deviceRepository);
+var deviceManager = factory.CreateDeviceManager();
+deviceManager.ShowAllDevices();

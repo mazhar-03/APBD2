@@ -3,29 +3,30 @@
 namespace Project;
 
 /// <summary>
-/// Represents an embedded device that connects to a network and has an IP address.
+///     Represents an embedded device that connects to a network and has an IP address.
 /// </summary>
-public class EmbeddedDevices : ElectronicDevice
+public class EmbeddedDevices : ElectronicDevice, IDevice
 {
     private string _ipAddress;
     private string _networkName;
 
     /// <summary>
-    /// Creates a new embedded device with IP and network name.
+    ///     Creates a new embedded device with IP and network name.
     /// </summary>
     /// <param name="id">The device ID.</param>
     /// <param name="name">The device name.</param>
     /// <param name="isOn">Whether the device is on initially.</param>
     /// <param name="ipAddress">The IP address of the device.</param>
     /// <param name="connectionName">The network name to connect to.</param>
-    public EmbeddedDevices(string id, string name, bool isOn, string ipAddress, string connectionName) : base(id, name, isOn)
+    public EmbeddedDevices(string id, string name, bool isOn, string ipAddress, string connectionName) : base(id, name,
+        isOn)
     {
         IpName = ipAddress;
         NetworkName = connectionName;
     }
 
     /// <summary>
-    /// The IP address of the device. Must be in valid IPv4 format.
+    ///     The IP address of the device. Must be in valid IPv4 format.
     /// </summary>
     /// <exception cref="ArgumentException">Thrown if the IP format is invalid.</exception>
     public string IpName
@@ -43,7 +44,7 @@ public class EmbeddedDevices : ElectronicDevice
     }
 
     /// <summary>
-    /// The network name the device is connected to. Must contain 'MD Ltd.'.
+    ///     The network name the device is connected to. Must contain 'MD Ltd.'.
     /// </summary>
     /// <exception cref="ConnectionException">Thrown if the network name is not allowed.</exception>
     public string NetworkName
@@ -59,7 +60,7 @@ public class EmbeddedDevices : ElectronicDevice
 
 
     /// <summary>
-    /// Returns all device info as a string formatted for file storage.
+    ///     Returns all device info as a string formatted for file storage.
     /// </summary>
     public override string ToString()
     {
