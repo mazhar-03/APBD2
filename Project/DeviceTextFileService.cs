@@ -20,9 +20,9 @@ public class DeviceTextFileService : IDeviceRepository
     ///     Loads all devices from the file.
     /// </summary>
     /// <returns>A list of devices loaded from the file.</returns>
-    public List<IDevice> LoadDevices()
+    public List<Device> LoadDevices()
     {
-        List<IDevice> devices = new();
+        List<Device> devices = new();
 
         if (!File.Exists(_filePath))
         {
@@ -54,7 +54,7 @@ public class DeviceTextFileService : IDeviceRepository
     ///     Saves all current devices to the file.
     /// </summary>
     /// <param name="devices">The list of devices to write.</param>
-    public void SaveDevices(List<IDevice> devices)
+    public void SaveDevices(List<Device> devices)
     {
         var writer = new StreamWriter(_filePath, false);
         try

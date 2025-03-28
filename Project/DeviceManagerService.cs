@@ -6,7 +6,7 @@
 public class DeviceManagerService : IDeviceManager
 {
     private readonly IDeviceRepository _deviceRepository;
-    private readonly List<IDevice> _devices;
+    private readonly List<Device> _devices;
 
 
     public DeviceManagerService(IDeviceRepository deviceRepository)
@@ -17,7 +17,7 @@ public class DeviceManagerService : IDeviceManager
 
     private const int MaxNumOfDevices = 15;
 
-    public void AddDevice(IDevice newDevice)
+    public void AddDevice(Device newDevice)
     {
         if (_devices.Count < MaxNumOfDevices &&
             !_devices.Any(d => d.Id == newDevice.Id && d.GetType() == newDevice.GetType()))

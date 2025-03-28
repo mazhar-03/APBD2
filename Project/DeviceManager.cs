@@ -6,7 +6,7 @@
 public class DeviceManager : IDeviceManager
 {
     private const int MaxNumOfDevices = 15;
-    private readonly List<IDevice> _devices;
+    private readonly List<Device> _devices;
     private readonly DeviceTextFileService _service;
 
     public DeviceManager(string filePath)
@@ -19,7 +19,7 @@ public class DeviceManager : IDeviceManager
     ///     Adds a new device if the list isn't full and the ID is unique.
     /// </summary>
 
-    public void AddDevice(IDevice newDevice)
+    public void AddDevice(Device newDevice)
     {
         if (_devices.Count < MaxNumOfDevices &&
             !_devices.Any(d => d.Id == newDevice.Id && d.GetType() == newDevice.GetType()))
@@ -244,7 +244,7 @@ public class DeviceManager : IDeviceManager
     /// <summary>
     ///     Finds a device by ID and type. Used internally.
     /// </summary>
-    private IDevice? FindDevice(string id, string deviceType)
+    private Device? FindDevice(string id, string deviceType)
     {
         return _devices.Find(d =>
             d.Id == id && d.GetType().Name.Equals(deviceType, StringComparison.OrdinalIgnoreCase));

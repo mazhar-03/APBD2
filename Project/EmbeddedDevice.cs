@@ -5,7 +5,7 @@ namespace Project;
 /// <summary>
 ///     Represents an embedded device that connects to a network and has an IP address.
 /// </summary>
-public class EmbeddedDevices : ElectronicDevice, IDevice
+public class EmbeddedDevices : Device
 {
     private string _ipAddress;
     private string _networkName;

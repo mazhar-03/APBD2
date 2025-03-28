@@ -9,7 +9,7 @@ public interface IDeviceManager
     ///     Adds a new device to the list.
     /// </summary>
     /// <param name="newDevice">The device to add.</param>
-    void AddDevice(IDevice newDevice);
+    void AddDevice(Device newDevice);
 
     /// <summary>
     ///     Removes a device by its ID and type.

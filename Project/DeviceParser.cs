@@ -8,7 +8,7 @@ public static class DeviceParser
     /// <param name="line">The text line to parse.</param>
     /// <returns>The parsed device, or throws if the format is wrong.</returns>
     /// <exception cref="FormatException">Thrown if the line is not correctly formatted.</exception>
-    public static IDevice ParseDevice(string line)
+    public static Device ParseDevice(string line)
     {
         var parts = line.Split(',');
 

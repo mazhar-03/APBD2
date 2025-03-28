@@ -2,6 +2,6 @@
 
 public interface IDeviceRepository
 {
-    List<IDevice> LoadDevices();
-    void SaveDevices(List<IDevice> devices);
+    List<Device> LoadDevices();
+    void SaveDevices(List<Device> devices);
 }
