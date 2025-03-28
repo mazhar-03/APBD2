@@ -7,16 +7,14 @@ public class DeviceManagerTests
     [Fact]
     public void CheckEmptyBatteryException()
     {
-        IDevice watch = new Smartwatches("2", "Sw22", false, 10);
+        Device watch = new Smartwatches("2", "Sw22", false, 10);
         Assert.Throws<EmptyBatteryException>(() => watch.TurnOn());
     }
 
     [Fact]
     public void CheckAddDevice()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input1.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input1.txt");
         deviceManager.AddDevice(new Smartwatches("2", "Sw22", false, 73));
 
         Assert.Equal(1, deviceManager.DeviceCount());
@@ -25,13 +23,11 @@ public class DeviceManagerTests
     [Fact]
     public void CheckAddDeviceWhenStorageFull()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input2.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input2.txt");
         for (var i = 1; i <= 15; i++)
             deviceManager.AddDevice(new Smartwatches(i.ToString(), "Sw22", false, i + 40));
 
-        IDevice extraDevice = new Smartwatches("16", "Extra Watch", false, 50);
+        Device extraDevice = new Smartwatches("16", "Extra Watch", false, 50);
         deviceManager.AddDevice(extraDevice);
 
         Assert.Equal(15, deviceManager.DeviceCount());
@@ -40,9 +36,7 @@ public class DeviceManagerTests
     [Fact]
     public void CheckAddDeviceWithExistingIdSameType()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input3.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input3.txt");
         deviceManager.AddDevice(new Smartwatches("2", "Sw22", false, 73));
         deviceManager.AddDevice(new Smartwatches("2", "ABC", false, 73));
 
@@ -52,9 +46,7 @@ public class DeviceManagerTests
     [Fact]
     public void CheckAddDeviceWithExistingIdDiffType()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input4.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input4.txt");
         deviceManager.AddDevice(new Smartwatches("2", "Sw22", false, 73));
         deviceManager.AddDevice(new PersonalComputer("2", "ABC", false, "OS"));
 
@@ -64,9 +56,7 @@ public class DeviceManagerTests
     [Fact]
     public void CheckRemoveDevice()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input5.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input5.txt");
         deviceManager.AddDevice(new Smartwatches("2", "Sw22", false, 73));
         deviceManager.AddDevice(new Smartwatches("3", "Sw22", false, 73));
         deviceManager.RemoveDevice("2", "Smartwatches");
@@ -77,10 +67,8 @@ public class DeviceManagerTests
     [Fact]
     public void UpdateBatteryForSmartwatches()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input6.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice watch = new Smartwatches("4", "Sw22", false, 70);
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input6.txt");
+        Device watch = new Smartwatches("4", "Sw22", false, 70);
         deviceManager.AddDevice(watch);
         deviceManager.UpdateBattery("4", 42);
 
@@ -90,10 +78,8 @@ public class DeviceManagerTests
     [Fact]
     public void UpdateOperatingSystemForComputers()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input7.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice currentComputer = new PersonalComputer("2", "PC", false, "Windows");
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input7.txt");
+        Device currentComputer = new PersonalComputer("2", "PC", false, "Windows");
         deviceManager.AddDevice(currentComputer);
         deviceManager.UpdateOperatingSystem("2", "Mac OS");
 
@@ -103,10 +89,8 @@ public class DeviceManagerTests
     [Fact]
     public void UpdateIpAddressForEmbeddedDevices()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input8.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice device = new EmbeddedDevices("2", "Embedded Device", false, "123.123.123.123", "MD Ltd. consist");
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input8.txt");
+        Device device = new EmbeddedDevices("2", "Embedded Device", false, "123.123.123.123", "MD Ltd. consist");
         deviceManager.AddDevice(device);
         deviceManager.UpdateIpAddress("2", "111.111.111.111");
 
@@ -116,10 +100,8 @@ public class DeviceManagerTests
     [Fact]
     public void UpdateNonValidIpAddressForEmbeddedDevices()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input9.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice device = new EmbeddedDevices("1", "Embedded Device", false, "123.123.123.123", "MD Ltd. consist");
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input9.txt");
+        Device device = new EmbeddedDevices("1", "Embedded Device", false, "123.123.123.123", "MD Ltd. consist");
         deviceManager.AddDevice(device);
 
         Assert.Throws<ArgumentException>(() => deviceManager.UpdateIpAddress("1", "11.766.672.611"));
@@ -128,10 +110,8 @@ public class DeviceManagerTests
     [Fact]
     public void UpdateNetworkNameForEmbeddedDevices()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input10.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice device = new EmbeddedDevices("4", "Embedded Device", false, "123.123.123.123", "MD Ltd. consist");
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input10.txt");
+        Device device = new EmbeddedDevices("4", "Embedded Device", false, "123.123.123.123", "MD Ltd. consist");
         deviceManager.AddDevice(device);
         deviceManager.UpdateNetworkName("4", "Network Name MD Ltd. consist");
 
@@ -141,10 +121,8 @@ public class DeviceManagerTests
     [Fact]
     public void UpdateNonValidNetworkNameForEmbeddedDevices()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input11.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice device = new EmbeddedDevices("1", "Embedded Device", false, "123.123.123.123", "MD Ltd. consist");
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input11.txt");
+        Device device = new EmbeddedDevices("1", "Embedded Device", false, "123.123.123.123", "MD Ltd. consist");
         deviceManager.AddDevice(device);
 
         Assert.Throws<ConnectionException>(() => deviceManager.UpdateNetworkName("1", "c# party"));
@@ -153,10 +131,8 @@ public class DeviceManagerTests
     [Fact]
     public void UpdateTurnOn()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input12.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice watch = new Smartwatches("3", "Sw22", false, 100);
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input12.txt");
+        Device watch = new Smartwatches("3", "Sw22", false, 100);
         deviceManager.AddDevice(watch);
         deviceManager.TurnOnDevice("3", "Smartwatches");
 
@@ -166,10 +142,8 @@ public class DeviceManagerTests
     [Fact]
     public void UpdateTurnOff()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input13.txt");
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice watch = new Smartwatches("3", "Sw22", true, 80);
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input13.txt");
+        Device watch = new Smartwatches("3", "Sw22", true, 80);
         deviceManager.AddDevice(watch);
         deviceManager.TurnOffDevice("3", "Smartwatches");
 
@@ -179,11 +153,8 @@ public class DeviceManagerTests
     [Fact]
     public void TurnOnPcWithoutAnOs()
     {
-        IDeviceRepository deviceRepository = new DeviceTextFileService("input14.txt");
-        ;
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice currentComputer = new PersonalComputer("5", "PC", false, "");
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager("input14.txt");
+        Device currentComputer = new PersonalComputer("5", "PC", false, "");
         deviceManager.AddDevice(currentComputer);
         Assert.Throws<EmptySystemException>(() => deviceManager.TurnOnDevice("5", "PersonalComputer"));
     }
@@ -192,10 +163,8 @@ public class DeviceManagerTests
     public void CheckSaveToFileWorksCorrectly()
     {
         var testFilePath = "input15.txt";
-        IDeviceRepository deviceRepository = new DeviceTextFileService(testFilePath);
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice device = new Smartwatches("1", "Apple Watch", false, 50);
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager(testFilePath);
+        Device device = new Smartwatches("1", "Apple Watch", false, 50);
 
         deviceManager.AddDevice(device);
 
@@ -208,10 +177,8 @@ public class DeviceManagerTests
     public void CheckSaveToFileWorksCorrectly2()
     {
         var testFilePath = "input16.txt";
-        IDeviceRepository deviceRepository = new DeviceTextFileService(testFilePath);
-        var factory = new DeviceManagerFactory(deviceRepository);
-        var deviceManager = factory.CreateDeviceManager();
-        IDevice device = new Smartwatches("3", "Apple Watch", false, 40);
+        var deviceManager = DeviceManagerFactory.CreateDeviceManager(testFilePath);
+        Device device = new Smartwatches("3", "Apple Watch", false, 40);
 
         deviceManager.AddDevice(device);
         deviceManager.TurnOnDevice("3", "Smartwatches");
