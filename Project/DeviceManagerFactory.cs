@@ -3,22 +3,16 @@
 /// <summary>
 ///     Helps create a device manager instance.
 /// </summary>
-public class DeviceManagerFactory
+public static class DeviceManagerFactory
 {
     /// <summary>
     ///     Creates a new device manager with a given file path.
     /// </summary>
     /// <param name="filePath">The path to the file used for loading/saving devices.</param>
     /// <returns>An instance of IDeviceManager.</returns>
-    private readonly IDeviceRepository _deviceRepository;
-
-    public DeviceManagerFactory(IDeviceRepository deviceRepository)
+    public static IDeviceManager CreateDeviceManager(string filePath)
     {
-        _deviceRepository = deviceRepository;
-    }
-
-    public IDeviceManager CreateDeviceManager()
-    {
-        return new DeviceManagerService(_deviceRepository);
+        IDeviceRepository repository = new DeviceTextFileService(filePath);
+        return new DeviceManagerService(repository);
     }
 }
