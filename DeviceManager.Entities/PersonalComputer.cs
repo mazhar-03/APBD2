@@ -1,4 +1,4 @@
-﻿namespace Project;
+﻿namespace DeviceManager.Entities;
 
 /// <summary>
 ///     A personal computer that can run an operating system.
@@ -13,7 +13,7 @@ public class PersonalComputer : Device
     /// <param name="isOn">Whether the PC is initially turned on.</param>
     /// <param name="operatingSystem">The operating system name.</param>
     /// <exception cref="EmptySystemException">Thrown if PC is turned on without an OS.</exception>
-    public PersonalComputer(string id, string name, bool isOn, string operatingSystem) : base(id, name, isOn)
+    public PersonalComputer(string id, string name, bool isOn, string? operatingSystem) : base(id, name, isOn)
     {
         OperatingSystem = operatingSystem;
         if (isOn && string.IsNullOrWhiteSpace(operatingSystem))
@@ -23,7 +23,7 @@ public class PersonalComputer : Device
     /// <summary>
     ///     The operating system installed on the PC.
     /// </summary>
-    public string OperatingSystem { get; set; }
+    public string? OperatingSystem { get; set; }
 
     /// <summary>
     ///     Turns the PC on. Throws if no OS is installed.

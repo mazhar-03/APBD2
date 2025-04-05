@@ -1,4 +1,4 @@
-﻿namespace Project;
+﻿namespace DeviceManager.Entities;
 
 /// <summary>
 ///     Thrown when there's a problem with a network name.

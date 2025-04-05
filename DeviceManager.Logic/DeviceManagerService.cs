@@ -1,6 +1,8 @@
-﻿namespace Project;
+﻿using DeviceManager.Entities;
 
-/// <summary>
+namespace DeviceManager.Logic
+{
+    /// <summary>
 ///     Service class for managing devices that implements IDeviceManager.
 /// </summary>
 public class DeviceManagerService : IDeviceManager
@@ -48,7 +50,7 @@ public class DeviceManagerService : IDeviceManager
         var device = _devices.FirstOrDefault(d => d.Id == id);
         if (device != null)
         {
-            device.Name = newName.ToString();
+            device.Name = newName.ToString() ?? throw new InvalidOperationException();
             _deviceRepository.SaveDevices(_devices); 
         }
     }
@@ -78,7 +80,7 @@ public class DeviceManagerService : IDeviceManager
         var device = _devices.FirstOrDefault(d => d.Id == id && d is EmbeddedDevices);
         if (device != null)
         {
-            ((EmbeddedDevices)device).IpName = newIp.ToString();
+            ((EmbeddedDevices)device).IpName = newIp.ToString() ?? throw new InvalidOperationException();
             _deviceRepository.SaveDevices(_devices); 
         }
     }
@@ -88,7 +90,7 @@ public class DeviceManagerService : IDeviceManager
         var device = _devices.FirstOrDefault(d => d.Id == id && d is EmbeddedDevices);
         if (device != null)
         {
-            ((EmbeddedDevices)device).NetworkName = newNetwork.ToString();
+            ((EmbeddedDevices)device).NetworkName = newNetwork.ToString() ?? throw new InvalidOperationException();
             _deviceRepository.SaveDevices(_devices); 
         }
     }
@@ -124,4 +126,10 @@ public class DeviceManagerService : IDeviceManager
     {
         return _devices.Count;
     }
+
+    public List<Device> GetAllDevices()
+    {
+        return _devices;
+    }
+}
 }

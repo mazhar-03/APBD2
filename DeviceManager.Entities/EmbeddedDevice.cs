@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace Project;
+namespace DeviceManager.Entities;
 
 /// <summary>
 ///     Represents an embedded device that connects to a network and has an IP address.

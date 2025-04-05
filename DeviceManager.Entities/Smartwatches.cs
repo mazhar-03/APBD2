@@ -1,4 +1,4 @@
-﻿namespace Project;
+﻿namespace DeviceManager.Entities;
 
 /// <summary>
 ///     A smartwatch device that has a battery and can notify when low.

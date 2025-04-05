@@ -1,4 +1,4 @@
-﻿namespace Project;
+﻿namespace DeviceManager.Entities;
 
 /// <summary>
 ///     Used by devices that need to notify about power or battery status.

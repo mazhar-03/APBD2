@@ -1,6 +1,8 @@
-﻿namespace Project;
+﻿using DeviceManager.Entities;
 
-/// <summary>
+namespace DeviceManager.Logic
+{
+    /// <summary>
 ///     Interface for managing a list of electronic devices.
 /// </summary>
 public interface IDeviceManager
@@ -78,4 +80,11 @@ public interface IDeviceManager
     /// </summary>
     /// <returns>The number of devices.</returns>
     int DeviceCount();
+    
+    /// <summary>
+    ///     Returns all devices in the list.
+    /// </summary>
+    List<Device> GetAllDevices();
 }
+}
+

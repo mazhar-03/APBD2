@@ -1,4 +1,4 @@
-﻿namespace Project;
+﻿namespace DeviceManager.Entities;
 
 /// <summary>
 ///     Thrown when a device (like a smartwatch) tries to turn on with too little battery.

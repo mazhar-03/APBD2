@@ -1,4 +1,6 @@
-using Project;
+
+using DeviceManager.Entities;
+using DeviceManager.Logic;
 
 namespace DeviceManagerTests;
 
