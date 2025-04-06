@@ -2,6 +2,8 @@ using DeviceManager.Entities;
 using DeviceManager.Logic;
 using Microsoft.AspNetCore.Mvc;
 
+namespace WebApplication1.Controllers;
+
 [ApiController]
 [Route("api/devices")]
 public class DevicesController : ControllerBase
@@ -16,10 +18,10 @@ public class DevicesController : ControllerBase
     [HttpGet]
     public IActionResult GetAllDevices()
     {
-        var devices = _deviceManager.
-            GetAllDevices().
-            Select(d => new {d.Id, d.Name});
-        
+        var devices = _deviceManager
+            .GetAllDevices()
+            .Select(d => new { d.Id, d.Name });
+
         return Ok(devices);
     }
 
@@ -54,35 +56,39 @@ public class DevicesController : ControllerBase
         if (existing == null)
             return NotFound("Device not found.");
 
-        var deviceType = existing.GetType().Name;
+        var deviceType = updatedDevice.GetType().Name;
 
         try
         {
-            if (updatedDevice.Name != existing.Name)
-                _deviceManager.EditDevice(id, deviceType, updatedDevice.Name);
+            _deviceManager.EditDevice(updatedDevice.Id, deviceType, updatedDevice.Name);
 
-            if (updatedDevice.IsOn && !existing.IsOn)
-                _deviceManager.TurnOnDevice(id, deviceType);
-            else if (!updatedDevice.IsOn && existing.IsOn)
-                _deviceManager.TurnOffDevice(id, deviceType);
+            if (updatedDevice.IsOn)
+                _deviceManager.TurnOnDevice(updatedDevice.Id, deviceType);
+            else
+                _deviceManager.TurnOffDevice(updatedDevice.Id, deviceType);
 
-            if (existing is PersonalComputer && updatedDevice is PersonalComputer pc)
-                _deviceManager.UpdateOperatingSystem(id, pc.OperatingSystem);
-
-            if (existing is Smartwatches && updatedDevice is Smartwatches sw)
-                _deviceManager.UpdateBattery(id, sw.BatteryPercentage);
-
-            if (existing is EmbeddedDevices && updatedDevice is EmbeddedDevices ed)
+            if (updatedDevice is PersonalComputer pc)
             {
-                _deviceManager.UpdateIpAddress(id, ed.IpName);
-                _deviceManager.UpdateNetworkName(id, ed.NetworkName);
+                if (pc.IsOn && string.IsNullOrWhiteSpace(pc.OperatingSystem))
+                    throw new EmptySystemException("PC cannot remain on without an operating system.");
+
+                _deviceManager.UpdateOperatingSystem(updatedDevice.Id, pc.OperatingSystem);
             }
 
-            return Ok("Device updated.");
+            if (updatedDevice is Smartwatches sw)
+                _deviceManager.UpdateBattery(updatedDevice.Id, sw.BatteryPercentage);
+
+            if (updatedDevice is EmbeddedDevices ed)
+            {
+                _deviceManager.UpdateIpAddress(updatedDevice.Id, ed.IpName);
+                _deviceManager.UpdateNetworkName(updatedDevice.Id, ed.NetworkName);
+            }
+
+            return Ok("Device fully updated.");
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest($"Update failed: {ex.Message}");
         }
     }
 
@@ -90,10 +96,10 @@ public class DevicesController : ControllerBase
     public IActionResult DeleteDevice(string id)
     {
         var device = _deviceManager.GetDeviceById(id);
-        if(device == null)
+        if (device == null)
             return NotFound("Device not found.");
-        
-        _deviceManager.RemoveDevice(id, device.GetType().Name);
+
+        _deviceManager.RemoveDevice(id, device.GetType().ToString().ToLower());
         return NoContent();
     }
 }

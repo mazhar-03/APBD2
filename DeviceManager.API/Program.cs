@@ -8,6 +8,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 
+//for static collection as a db 
 builder.Services.AddSingleton<IDeviceManager>(sss =>
     new DeviceManagerService(new InMemoryDeviceRepository()));
 

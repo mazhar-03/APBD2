@@ -37,7 +37,7 @@ public class DeviceManagerService : IDeviceManager
 
     public void RemoveDevice(string id, string deviceType)
     {
-        var deviceToRemove = _devices.FirstOrDefault(d => d.Id == id);
+        var deviceToRemove = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
         if (deviceToRemove != null)
         {
             _devices.Remove(deviceToRemove);
@@ -118,7 +118,7 @@ public class DeviceManagerService : IDeviceManager
 
     public void TurnOnDevice(string id, string deviceType)
     {
-        var device = _devices.FirstOrDefault(d => d.Id == id);
+        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
         if (device != null)
         {
             device.TurnOn();
