@@ -47,55 +47,75 @@ public class DeviceManagerService : IDeviceManager
 
     public void EditDevice(string id, string deviceType, object newName)
     {
-        var device = _devices.FirstOrDefault(d => d.Id == id);
-        if (device != null)
-        {
-            device.Name = newName.ToString() ?? throw new InvalidOperationException();
-            _deviceRepository.SaveDevices(_devices);
-        }
+        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        if (device == null)
+            throw new ArgumentException("Device not found.");
+
+        var name = newName as string;
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Device name must be a non-empty string.");
+
+        device.Name = name.Trim();
+        _deviceRepository.SaveDevices(_devices);
     }
+
 
     public void UpdateBattery(string id, object newBattery)
     {
-        var device = _devices.FirstOrDefault(d => d.Id == id && d is Smartwatches);
-        if (device != null)
-        {
-            ((Smartwatches)device).BatteryPercentage = (int)newBattery;
-            _deviceRepository.SaveDevices(_devices);
-        }
+        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as Smartwatches;
+        if (device == null)
+            throw new ArgumentException("Device is not a Smartwatch.");
+
+        if (newBattery is not int level)
+            throw new ArgumentException("Battery must be an integer.");
+
+        device.BatteryPercentage = level;
+        _deviceRepository.SaveDevices(_devices);
     }
+
 
     public void UpdateOperatingSystem(string id, object newOs)
     {
-        var device = _devices.FirstOrDefault(d => d.Id == id && d is PersonalComputer);
-        if (device != null)
-        {
-            ((PersonalComputer)device).OperatingSystem = newOs.ToString();
-            _deviceRepository.SaveDevices(_devices);
-        }
-    }
+        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as PersonalComputer;
+        if (device == null)
+            throw new ArgumentException("Device is not a PersonalComputer.");
 
+        var os = newOs as string;
+        if (string.IsNullOrWhiteSpace(os))
+            throw new ArgumentException("Operating system name cannot be empty.");
+
+        device.OperatingSystem = os.Trim();
+        _deviceRepository.SaveDevices(_devices);
+    }
+    
     public void UpdateIpAddress(string id, object newIp)
     {
-        var device = _devices.FirstOrDefault(d => d.Id == id && d is EmbeddedDevices);
-        if (device != null)
-        {
-            ((EmbeddedDevices)device).IpName = newIp.ToString() ?? throw new InvalidOperationException();
-            _deviceRepository.SaveDevices(_devices);
-        }
-    }
+        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as EmbeddedDevices;
+        if (device == null)
+            throw new ArgumentException("Device is not an EmbeddedDevice.");
 
+        var ip = newIp as string;
+        if (string.IsNullOrWhiteSpace(ip))
+            throw new ArgumentException("Invalid or null IP address.");
+
+        device.IpName = ip;
+        _deviceRepository.SaveDevices(_devices);
+    }
+    
     public void UpdateNetworkName(string id, object newNetwork)
     {
-        var device = _devices.FirstOrDefault(d => d.Id == id && d is EmbeddedDevices);
-        if (device != null)
-        {
-            ((EmbeddedDevices)device).NetworkName = newNetwork.ToString() ?? throw new InvalidOperationException();
-            _deviceRepository.SaveDevices(_devices);
-        }
+        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as EmbeddedDevices;
+        if (device == null)
+            throw new ArgumentException("Device is not an EmbeddedDevice.");
+
+        var network = newNetwork as string;
+        if (string.IsNullOrWhiteSpace(network))
+            throw new ArgumentException("Network name must be a valid string.");
+
+        device.NetworkName = network.Trim();
+        _deviceRepository.SaveDevices(_devices);
     }
 
-    // Turn on a device
     public void TurnOnDevice(string id, string deviceType)
     {
         var device = _devices.FirstOrDefault(d => d.Id == id);
@@ -105,11 +125,10 @@ public class DeviceManagerService : IDeviceManager
             _deviceRepository.SaveDevices(_devices);
         }
     }
-
-    // Turn off a device
+    
     public void TurnOffDevice(string id, string deviceType)
     {
-        var device = _devices.FirstOrDefault(d => d.Id == id);
+        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));;
         if (device != null)
         {
             device.TurnOff();
@@ -134,6 +153,6 @@ public class DeviceManagerService : IDeviceManager
 
     public Device? GetDeviceById(string id)
     {
-        return _devices.FirstOrDefault(d => d.Id == id);
+        return _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
     }
 }

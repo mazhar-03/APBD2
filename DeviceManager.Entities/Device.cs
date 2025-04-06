@@ -6,9 +6,9 @@ namespace DeviceManager.Entities;
 ///     Abstract base class for all electronic devices.
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-[JsonDerivedType(typeof(Smartwatches), "smartwatch")]
+[JsonDerivedType(typeof(Smartwatches), "sw")]
 [JsonDerivedType(typeof(PersonalComputer), "pc")]
-[JsonDerivedType(typeof(EmbeddedDevices), "embedded")]
+[JsonDerivedType(typeof(EmbeddedDevices), "ed")]
 public abstract class Device
 {
     /// <summary>

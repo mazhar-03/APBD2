@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.Logic", "Devi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.Entities", "DeviceManager.Entities\DeviceManager.Entities.csproj", "{3E729054-D22D-4874-AF45-9B4FBA1B36D2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{68747578-E75F-4E13-AF18-FDC7312A6145}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.API", "DeviceManager.API\DeviceManager.API.csproj", "{68747578-E75F-4E13-AF18-FDC7312A6145}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
