@@ -1,4 +1,6 @@
-﻿namespace DeviceManager.Entities;
+﻿using System.Text.Json.Serialization;
+
+namespace DeviceManager.Entities;
 
 /// <summary>
 ///     A personal computer that can run an operating system.
@@ -13,6 +15,7 @@ public class PersonalComputer : Device
     /// <param name="isOn">Whether the PC is initially turned on.</param>
     /// <param name="operatingSystem">The operating system name.</param>
     /// <exception cref="EmptySystemException">Thrown if PC is turned on without an OS.</exception>
+    [JsonConstructor]
     public PersonalComputer(string id, string name, bool isOn, string? operatingSystem) : base(id, name, isOn)
     {
         OperatingSystem = operatingSystem;

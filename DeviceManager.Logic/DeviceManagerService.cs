@@ -8,7 +8,7 @@ namespace DeviceManager.Logic
 public class DeviceManagerService : IDeviceManager
 {
     private readonly IDeviceRepository _deviceRepository;
-    private readonly List<Device> _devices;
+    private static List<Device> _devices=  new();
 
 
     public DeviceManagerService(IDeviceRepository deviceRepository)

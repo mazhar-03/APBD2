@@ -1,8 +1,14 @@
-﻿namespace DeviceManager.Entities;
+﻿using System.Text.Json.Serialization;
+
+namespace DeviceManager.Entities;
 
 /// <summary>
 ///     Abstract base class for all electronic devices.
 /// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(Smartwatches), "smartwatch")]
+[JsonDerivedType(typeof(PersonalComputer), "pc")]
+[JsonDerivedType(typeof(EmbeddedDevices), "embedded")]
 public abstract class Device
 {
     /// <summary>

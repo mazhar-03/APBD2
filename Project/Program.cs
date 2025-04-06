@@ -1,3 +1,9 @@
 ﻿using DeviceManager.Logic;
 
-var deviceManager = DeviceManagerFactory.CreateDeviceManager("devices.txt");
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        
+    }
+}

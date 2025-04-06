@@ -1,4 +1,6 @@
-﻿namespace DeviceManager.Entities;
+﻿using System.Text.Json.Serialization;
+
+namespace DeviceManager.Entities;
 
 /// <summary>
 ///     A smartwatch device that has a battery and can notify when low.
@@ -15,6 +17,7 @@ public class Smartwatches : Device, IPowerNotifier
     /// <param name="name">The name of the smartwatch.</param>
     /// <param name="isOn">Whether it's on at the start.</param>
     /// <param name="batteryPercentage">Battery level (0–100%).</param>
+    [JsonConstructor]
     public Smartwatches(string id, string name, bool isOn, int batteryPercentage) : base(id, name, isOn)
     {
         BatteryPercentage = batteryPercentage;
