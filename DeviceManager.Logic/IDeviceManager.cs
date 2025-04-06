@@ -1,8 +1,8 @@
 ﻿using DeviceManager.Entities;
 
-namespace DeviceManager.Logic
-{
-    /// <summary>
+namespace DeviceManager.Logic;
+
+/// <summary>
 ///     Interface for managing a list of electronic devices.
 /// </summary>
 public interface IDeviceManager
@@ -80,12 +80,11 @@ public interface IDeviceManager
     /// </summary>
     /// <returns>The number of devices.</returns>
     int DeviceCount();
-    
+
     /// <summary>
     ///     Returns all devices in the list.
     /// </summary>
     List<Device> GetAllDevices();
+
     Device? GetDeviceById(string id);
 }
-}
-

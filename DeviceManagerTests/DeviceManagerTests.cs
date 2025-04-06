@@ -1,4 +1,3 @@
-
 using DeviceManager.Entities;
 using DeviceManager.Logic;
 

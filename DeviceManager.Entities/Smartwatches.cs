@@ -45,6 +45,15 @@ public class Smartwatches : Device, IPowerNotifier
     }
 
     /// <summary>
+    ///     Prints a notification message to the console.
+    /// </summary>
+    /// <param name="msg">The message to show.</param>
+    public void Notify(string msg)
+    {
+        Console.WriteLine(msg);
+    }
+
+    /// <summary>
     ///     Turns the watch on. Needs at least 11% battery to work.
     /// </summary>
     /// <exception cref="EmptyBatteryException">Thrown if battery is too low.</exception>
@@ -62,14 +71,5 @@ public class Smartwatches : Device, IPowerNotifier
     public override string ToString()
     {
         return $"SW-{Id},{Name},{IsOn},{BatteryPercentage}%";
-    }
-
-    /// <summary>
-    ///     Prints a notification message to the console.
-    /// </summary>
-    /// <param name="msg">The message to show.</param>
-    public void Notify(string msg)
-    {
-        Console.WriteLine(msg);
     }
 }

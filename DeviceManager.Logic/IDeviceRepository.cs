@@ -1,12 +1,9 @@
 ﻿using DeviceManager.Entities;
 
-namespace DeviceManager.Logic
+namespace DeviceManager.Logic;
+
+public interface IDeviceRepository
 {
-    public interface IDeviceRepository
-    {
-        List<Device> LoadDevices();
-        void SaveDevices(List<Device> devices);
-    }
+    List<Device> LoadDevices();
+    void SaveDevices(List<Device> devices);
 }
-
-

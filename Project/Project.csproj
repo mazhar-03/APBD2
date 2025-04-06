@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-      <ProjectReference Include="..\DeviceManager.Logic\DeviceManager.Logic.csproj" />
-      <ProjectReference Include="..\DeviceManager.Entities\DeviceManager.Entities.csproj" />
+        <ProjectReference Include="..\DeviceManager.Logic\DeviceManager.Logic.csproj"/>
+        <ProjectReference Include="..\DeviceManager.Entities\DeviceManager.Entities.csproj"/>
     </ItemGroup>
 
     <PropertyGroup>

@@ -12,21 +12,6 @@ namespace DeviceManager.Entities;
 public abstract class Device
 {
     /// <summary>
-    ///     The unique ID of the device.
-    /// </summary>
-    public string Id { get; set; }
-
-    /// <summary>
-    ///     The name of the device.
-    /// </summary>
-    public string Name { get; set; }
-
-    /// <summary>
-    ///     Whether the device is currently on.
-    /// </summary>
-    public bool IsOn { get;  set; }
-
-    /// <summary>
     ///     Sets the base properties of a device.
     /// </summary>
     /// <param name="id">The device ID.</param>
@@ -44,6 +29,21 @@ public abstract class Device
         Name = name;
         IsOn = isOn;
     }
+
+    /// <summary>
+    ///     The unique ID of the device.
+    /// </summary>
+    public string Id { get; set; }
+
+    /// <summary>
+    ///     The name of the device.
+    /// </summary>
+    public string Name { get; set; }
+
+    /// <summary>
+    ///     Whether the device is currently on.
+    /// </summary>
+    public bool IsOn { get; set; }
 
     /// <summary>
     ///     Turns the device on.

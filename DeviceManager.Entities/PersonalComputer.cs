@@ -19,8 +19,6 @@ public class PersonalComputer : Device
     public PersonalComputer(string id, string name, bool isOn, string? operatingSystem) : base(id, name, isOn)
     {
         OperatingSystem = operatingSystem;
-        if (isOn && string.IsNullOrWhiteSpace(operatingSystem))
-            throw new EmptySystemException("PC cannot be created as ON without an operating system.");
     }
 
     /// <summary>

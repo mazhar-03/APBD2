@@ -1,38 +1,38 @@
 ﻿using DeviceManager.Entities;
 
-namespace DeviceManager.Logic
-{
-    /// <summary>
+namespace DeviceManager.Logic;
+
+/// <summary>
 ///     Service class for managing devices that implements IDeviceManager.
 /// </summary>
 public class DeviceManagerService : IDeviceManager
 {
+    private const int MaxNumOfDevices = 15;
+    private static List<Device> _devices = new();
     private readonly IDeviceRepository _deviceRepository;
-    private static List<Device> _devices=  new();
 
 
     public DeviceManagerService(IDeviceRepository deviceRepository)
     {
         _deviceRepository = deviceRepository;
-        _devices = _deviceRepository.LoadDevices(); 
+        _devices = _deviceRepository.LoadDevices();
     }
 
-    private const int MaxNumOfDevices = 15;
-
-    public void AddDevice(Device newDevice)
+    public void AddDevice(Device device)
     {
-        if (_devices.Count < MaxNumOfDevices &&
-            !_devices.Any(d => d.Id == newDevice.Id && d.GetType() == newDevice.GetType()))
-        {
-            _devices.Add(newDevice);
-            Console.WriteLine($"Added device {newDevice.Name}-{newDevice.Id}");
-            _deviceRepository.SaveDevices(_devices); 
-        }
-        else
-        {
-            Console.WriteLine(
-                $"Cannot add device {newDevice.Name}-{newDevice.Id}: Duplicate ID for the same type exists.");
-        }
+        if (_devices.Count >= MaxNumOfDevices)
+            throw new ArgumentException("Device storage is full.");
+
+        if (_devices.Any(d => d.Id == device.Id && d.GetType() == device.GetType()))
+            throw new ArgumentException("Device already exists.");
+        
+        //improved turnOn validation for especially PC.
+        var shouldBeOn = device.IsOn;
+        device.IsOn = false;
+
+        if (shouldBeOn)
+            device.TurnOn(); 
+        _devices.Add(device);
     }
 
     public void RemoveDevice(string id, string deviceType)
@@ -41,7 +41,7 @@ public class DeviceManagerService : IDeviceManager
         if (deviceToRemove != null)
         {
             _devices.Remove(deviceToRemove);
-            _deviceRepository.SaveDevices(_devices); 
+            _deviceRepository.SaveDevices(_devices);
         }
     }
 
@@ -51,7 +51,7 @@ public class DeviceManagerService : IDeviceManager
         if (device != null)
         {
             device.Name = newName.ToString() ?? throw new InvalidOperationException();
-            _deviceRepository.SaveDevices(_devices); 
+            _deviceRepository.SaveDevices(_devices);
         }
     }
 
@@ -61,7 +61,7 @@ public class DeviceManagerService : IDeviceManager
         if (device != null)
         {
             ((Smartwatches)device).BatteryPercentage = (int)newBattery;
-            _deviceRepository.SaveDevices(_devices); 
+            _deviceRepository.SaveDevices(_devices);
         }
     }
 
@@ -71,7 +71,7 @@ public class DeviceManagerService : IDeviceManager
         if (device != null)
         {
             ((PersonalComputer)device).OperatingSystem = newOs.ToString();
-            _deviceRepository.SaveDevices(_devices); 
+            _deviceRepository.SaveDevices(_devices);
         }
     }
 
@@ -81,7 +81,7 @@ public class DeviceManagerService : IDeviceManager
         if (device != null)
         {
             ((EmbeddedDevices)device).IpName = newIp.ToString() ?? throw new InvalidOperationException();
-            _deviceRepository.SaveDevices(_devices); 
+            _deviceRepository.SaveDevices(_devices);
         }
     }
 
@@ -91,7 +91,7 @@ public class DeviceManagerService : IDeviceManager
         if (device != null)
         {
             ((EmbeddedDevices)device).NetworkName = newNetwork.ToString() ?? throw new InvalidOperationException();
-            _deviceRepository.SaveDevices(_devices); 
+            _deviceRepository.SaveDevices(_devices);
         }
     }
 
@@ -102,7 +102,7 @@ public class DeviceManagerService : IDeviceManager
         if (device != null)
         {
             device.TurnOn();
-            _deviceRepository.SaveDevices(_devices); 
+            _deviceRepository.SaveDevices(_devices);
         }
     }
 
@@ -131,10 +131,9 @@ public class DeviceManagerService : IDeviceManager
     {
         return _devices;
     }
+
     public Device? GetDeviceById(string id)
     {
         return _devices.FirstOrDefault(d => d.Id == id);
     }
-
-}
 }
