@@ -131,5 +131,10 @@ public class DeviceManagerService : IDeviceManager
     {
         return _devices;
     }
+    public Device? GetDeviceById(string id)
+    {
+        return _devices.FirstOrDefault(d => d.Id == id);
+    }
+
 }
 }

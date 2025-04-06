@@ -17,14 +17,14 @@ public class EmbeddedDevices : Device
     /// <param name="id">The device ID.</param>
     /// <param name="name">The device name.</param>
     /// <param name="isOn">Whether the device is on initially.</param>
-    /// <param name="ipAddress">The IP address of the device.</param>
-    /// <param name="connectionName">The network name to connect to.</param>
+    /// <param name="ipName">The IP address (matches IpName property).</param>
+    /// <param name="networkName">The network name (matches NetworkName property).</param>
     [JsonConstructor]
-    public EmbeddedDevices(string id, string name, bool isOn, string ipAddress, string connectionName) : base(id, name,
-        isOn)
+    public EmbeddedDevices(string id, string name, bool isOn, string ipName, string networkName)
+        : base(id, name, isOn)
     {
-        IpName = ipAddress;
-        NetworkName = connectionName;
+        IpName = ipName;
+        NetworkName = networkName;
     }
 
     /// <summary>
@@ -55,11 +55,10 @@ public class EmbeddedDevices : Device
         set
         {
             if (!value.Contains("MD Ltd."))
-                throw new ConnectionException("Invalid network name! Must connect to 'MD Ltd.'.");
+                throw new ConnectionException("Invalid network name! Must connect to 'MD Ltd.'");
             _networkName = value;
         }
     }
-
 
     /// <summary>
     ///     Returns all device info as a string formatted for file storage.

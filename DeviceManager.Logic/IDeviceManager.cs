@@ -85,6 +85,7 @@ public interface IDeviceManager
     ///     Returns all devices in the list.
     /// </summary>
     List<Device> GetAllDevices();
+    Device? GetDeviceById(string id);
 }
 }
 
