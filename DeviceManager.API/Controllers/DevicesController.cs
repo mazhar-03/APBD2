@@ -8,17 +8,13 @@ namespace WebApplication1.Controllers;
 [Route("api/devices")]
 public class DevicesController : ControllerBase
 {
-    private readonly IDeviceManager _deviceManager;
-
-    public DevicesController(IDeviceManager deviceManager)
-    {
-        _deviceManager = deviceManager;
-    }
+    private static readonly IDeviceManager DeviceManager = 
+        new DeviceManagerService(new InMemoryDeviceRepository());
 
     [HttpGet]
     public IActionResult GetAllDevices()
     {
-        var devices = _deviceManager
+        var devices = DeviceManager
             .GetAllDevices()
             .Select(d => new { d.Id, d.Name });
 
@@ -28,7 +24,7 @@ public class DevicesController : ControllerBase
     [HttpGet("{id}")]
     public IActionResult GetDeviceById(string id)
     {
-        var device = _deviceManager.GetDeviceById(id);
+        var device = DeviceManager.GetDeviceById(id);
         if (device == null)
             return NotFound("Device not found");
 
@@ -40,7 +36,7 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            _deviceManager.AddDevice(device);
+            DeviceManager.AddDevice(device);
             return CreatedAtAction(nameof(GetDeviceById), new { id = device.Id }, device);
         }
         catch (Exception ex)
@@ -52,7 +48,7 @@ public class DevicesController : ControllerBase
     [HttpPut("{id}")]
     public IActionResult UpdateDevice(string id, [FromBody] Device updatedDevice)
     {
-        var existing = _deviceManager.GetDeviceById(id);
+        var existing = DeviceManager.GetDeviceById(id);
         if (existing == null)
             return NotFound("Device not found.");
 
@@ -60,28 +56,28 @@ public class DevicesController : ControllerBase
 
         try
         {
-            _deviceManager.EditDevice(updatedDevice.Id, deviceType, updatedDevice.Name);
+            DeviceManager.EditDevice(updatedDevice.Id, deviceType, updatedDevice.Name);
 
-            if (updatedDevice.IsOn)
-                _deviceManager.TurnOnDevice(updatedDevice.Id, deviceType);
-            else
-                _deviceManager.TurnOffDevice(updatedDevice.Id, deviceType);
-
+            if (updatedDevice.IsOn && !existing.IsOn)
+                DeviceManager.TurnOnDevice(updatedDevice.Id, deviceType);
+            else if (!updatedDevice.IsOn && existing.IsOn)
+                DeviceManager.TurnOffDevice(updatedDevice.Id, deviceType);
+            
             if (updatedDevice is PersonalComputer pc)
             {
                 if (pc.IsOn && string.IsNullOrWhiteSpace(pc.OperatingSystem))
-                    throw new EmptySystemException("PC cannot remain on without an operating system.");
+                    throw new EmptySystemException("PC cannot remain turned on without an operating system.");
 
-                _deviceManager.UpdateOperatingSystem(updatedDevice.Id, pc.OperatingSystem);
+                DeviceManager.UpdateOperatingSystem(updatedDevice.Id, pc.OperatingSystem);
             }
 
             if (updatedDevice is Smartwatches sw)
-                _deviceManager.UpdateBattery(updatedDevice.Id, sw.BatteryPercentage);
+                DeviceManager.UpdateBattery(updatedDevice.Id, sw.BatteryPercentage);
 
             if (updatedDevice is EmbeddedDevices ed)
             {
-                _deviceManager.UpdateIpAddress(updatedDevice.Id, ed.IpName);
-                _deviceManager.UpdateNetworkName(updatedDevice.Id, ed.NetworkName);
+                DeviceManager.UpdateIpAddress(updatedDevice.Id, ed.IpName);
+                DeviceManager.UpdateNetworkName(updatedDevice.Id, ed.NetworkName);
             }
 
             return Ok("Device fully updated.");
@@ -95,11 +91,11 @@ public class DevicesController : ControllerBase
     [HttpDelete("{id}")]
     public IActionResult DeleteDevice(string id)
     {
-        var device = _deviceManager.GetDeviceById(id);
+        var device = DeviceManager.GetDeviceById(id);
         if (device == null)
             return NotFound("Device not found.");
 
-        _deviceManager.RemoveDevice(id, device.GetType().ToString().ToLower());
+        DeviceManager.RemoveDevice(id, device.GetType().ToString().ToLower());
         return NoContent();
     }
 }

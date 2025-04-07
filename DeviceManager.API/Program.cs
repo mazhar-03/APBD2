@@ -8,11 +8,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 
-//for static collection as a db 
-builder.Services.AddSingleton<IDeviceManager>(sss =>
-    new DeviceManagerService(new InMemoryDeviceRepository()));
-
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
