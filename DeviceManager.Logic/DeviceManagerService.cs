@@ -25,13 +25,13 @@ public class DeviceManagerService : IDeviceManager
 
         if (_devices.Any(d => d.Id == device.Id && d.GetType() == device.GetType()))
             throw new ArgumentException("Device already exists.");
-        
+
         //improved turnOn validation for especially PC.
         var shouldBeOn = device.IsOn;
         device.IsOn = false;
 
         if (shouldBeOn)
-            device.TurnOn(); 
+            device.TurnOn();
         _devices.Add(device);
     }
 
@@ -76,7 +76,8 @@ public class DeviceManagerService : IDeviceManager
 
     public void UpdateOperatingSystem(string id, object newOs)
     {
-        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as PersonalComputer;
+        var device =
+            _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as PersonalComputer;
         if (device == null)
             throw new ArgumentException("Device is not a PersonalComputer.");
 
@@ -87,10 +88,11 @@ public class DeviceManagerService : IDeviceManager
         device.OperatingSystem = os.Trim();
         _deviceRepository.SaveDevices(_devices);
     }
-    
+
     public void UpdateIpAddress(string id, object newIp)
     {
-        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as EmbeddedDevices;
+        var device =
+            _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as EmbeddedDevices;
         if (device == null)
             throw new ArgumentException("Device is not an EmbeddedDevice.");
 
@@ -101,10 +103,11 @@ public class DeviceManagerService : IDeviceManager
         device.IpName = ip;
         _deviceRepository.SaveDevices(_devices);
     }
-    
+
     public void UpdateNetworkName(string id, object newNetwork)
     {
-        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as EmbeddedDevices;
+        var device =
+            _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) as EmbeddedDevices;
         if (device == null)
             throw new ArgumentException("Device is not an EmbeddedDevice.");
 
@@ -125,10 +128,11 @@ public class DeviceManagerService : IDeviceManager
             _deviceRepository.SaveDevices(_devices);
         }
     }
-    
+
     public void TurnOffDevice(string id, string deviceType)
     {
-        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));;
+        var device = _devices.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        ;
         if (device != null)
         {
             device.TurnOff();

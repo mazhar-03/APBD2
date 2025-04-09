@@ -2,100 +2,134 @@ using DeviceManager.Entities;
 using DeviceManager.Logic;
 using Microsoft.AspNetCore.Mvc;
 
-namespace WebApplication1.Controllers;
-
 [ApiController]
 [Route("api/devices")]
 public class DevicesController : ControllerBase
 {
-    private static readonly IDeviceManager DeviceManager = 
+    private static readonly IDeviceManager DeviceManager =
         new DeviceManagerService(new InMemoryDeviceRepository());
 
     [HttpGet]
-    public IActionResult GetAllDevices()
+    public IResult GetAllDevices()
     {
         var devices = DeviceManager
             .GetAllDevices()
-            .Select(d => new { d.Id, d.Name });
+            .Select(d => new { d.Id, d.Name, d.IsOn });
 
-        return Ok(devices);
+        return Results.Ok(devices);
     }
 
     [HttpGet("{id}")]
-    public IActionResult GetDeviceById(string id)
+    public IResult GetDeviceById(string id)
     {
         var device = DeviceManager.GetDeviceById(id);
         if (device == null)
-            return NotFound("Device not found");
+            return Results.NotFound("Device not found");
 
-        return Ok(device);
+        return Results.Ok(device);
     }
 
-    [HttpPost]
-    public IActionResult AddDevice([FromBody] Device device)
+    [HttpPost("pc")]
+    public IResult AddPersonalComputer([FromBody] PersonalComputer device)
     {
-        try
-        {
-            DeviceManager.AddDevice(device);
-            return CreatedAtAction(nameof(GetDeviceById), new { id = device.Id }, device);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        DeviceManager.AddDevice(device);
+        return Results.Created($"/api/devices/pc/{device.Id}", device);
     }
 
-    [HttpPut("{id}")]
-    public IActionResult UpdateDevice(string id, [FromBody] Device updatedDevice)
+    [HttpPost("sw")]
+    public IResult AddSmartwatch([FromBody] Smartwatches device)
+    {
+        DeviceManager.AddDevice(device);
+        return Results.Created($"/api/devices/sw/{device.Id}", device);
+    }
+
+    [HttpPost("ed")]
+    public IResult AddEmbeddedDevice([FromBody] EmbeddedDevices device)
+    {
+        DeviceManager.AddDevice(device);
+        return Results.Created($"/api/devices/ed/{device.Id}", device);
+    }
+
+    [HttpPut("pc/{id}")]
+    public IResult UpdatePersonalComputer(string id, [FromBody] PersonalComputer updatedDevice)
     {
         var existing = DeviceManager.GetDeviceById(id);
         if (existing == null)
-            return NotFound("Device not found.");
-
-        var deviceType = updatedDevice.GetType().Name;
+            return Results.NotFound("Device not found.");
 
         try
         {
-            DeviceManager.EditDevice(updatedDevice.Id, deviceType, updatedDevice.Name);
-
-            if (updatedDevice.IsOn && !existing.IsOn)
-                DeviceManager.TurnOnDevice(updatedDevice.Id, deviceType);
-            else if (!updatedDevice.IsOn && existing.IsOn)
-                DeviceManager.TurnOffDevice(updatedDevice.Id, deviceType);
-            
-            if (updatedDevice is PersonalComputer pc)
-            {
-                if (pc.IsOn && string.IsNullOrWhiteSpace(pc.OperatingSystem))
-                    throw new EmptySystemException("PC cannot remain turned on without an operating system.");
-
-                DeviceManager.UpdateOperatingSystem(updatedDevice.Id, pc.OperatingSystem);
-            }
-
-            if (updatedDevice is Smartwatches sw)
-                DeviceManager.UpdateBattery(updatedDevice.Id, sw.BatteryPercentage);
-
-            if (updatedDevice is EmbeddedDevices ed)
-            {
-                DeviceManager.UpdateIpAddress(updatedDevice.Id, ed.IpName);
-                DeviceManager.UpdateNetworkName(updatedDevice.Id, ed.NetworkName);
-            }
-
-            return Ok("Device fully updated.");
+            EditNameAndTurningOnOffSettings(existing, updatedDevice);
+            DeviceManager.UpdateOperatingSystem(updatedDevice.Id, updatedDevice.OperatingSystem);
+            return Results.Ok("Device fully updated.");
         }
         catch (Exception ex)
         {
-            return BadRequest($"Update failed: {ex.Message}");
+            return Results.BadRequest($"Update failed: {ex.Message}");
+        }
+    }
+
+    [HttpPut("sw/{id}")]
+    public IResult UpdateSmartwatch(string id, [FromBody] Smartwatches updatedDevice)
+    {
+        var existing = DeviceManager.GetDeviceById(id);
+        if (existing == null)
+            return Results.NotFound("Device not found.");
+
+        try
+        {
+            EditNameAndTurningOnOffSettings(existing, updatedDevice);
+
+            DeviceManager.UpdateBattery(updatedDevice.Id, updatedDevice.BatteryPercentage);
+            return Results.Ok("Device fully updated.");
+        }
+        catch (Exception ex)
+        {
+            return Results.BadRequest($"Update failed: {ex.Message}");
+        }
+    }
+
+    [HttpPut("ed/{id}")]
+    public IResult UpdateEmbeddedDevice(string id, [FromBody] EmbeddedDevices updatedDevice)
+    {
+        var existing = DeviceManager.GetDeviceById(id);
+        if (existing == null)
+            return Results.NotFound("Device not found.");
+
+        try
+        {
+            EditNameAndTurningOnOffSettings(existing, updatedDevice);
+            DeviceManager.UpdateIpAddress(updatedDevice.Id, updatedDevice.IpName);
+            DeviceManager.UpdateNetworkName(updatedDevice.Id, updatedDevice.NetworkName);
+            return Results.Ok("Device fully updated.");
+        }
+        catch (Exception ex)
+        {
+            return Results.BadRequest($"Update failed: {ex.Message}");
         }
     }
 
     [HttpDelete("{id}")]
-    public IActionResult DeleteDevice(string id)
+    public IResult DeleteDevice(string id)
     {
         var device = DeviceManager.GetDeviceById(id);
         if (device == null)
-            return NotFound("Device not found.");
+            return Results.NotFound("Device not found.");
 
         DeviceManager.RemoveDevice(id, device.GetType().ToString().ToLower());
-        return NoContent();
+        return Results.NoContent();
+    }
+
+    private void EditNameAndTurningOnOffSettings(Device? existing, Device? updatedDevice)
+    {
+        DeviceManager.EditDevice(updatedDevice.Id, updatedDevice.GetType().Name, updatedDevice.Name);
+        
+        if (updatedDevice.IsOn != existing.IsOn)
+        {
+            if (updatedDevice.IsOn)
+                DeviceManager.TurnOnDevice(updatedDevice.Id, updatedDevice.GetType().Name);
+            else
+                DeviceManager.TurnOffDevice(updatedDevice.Id, updatedDevice.GetType().Name);
+        }
     }
 }
