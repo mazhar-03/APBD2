@@ -1,2 +1,0 @@
-SW-2,Sw22,False,73%
-P-2,ABC,False,OS

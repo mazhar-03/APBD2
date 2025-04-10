@@ -1,1 +1,0 @@
-ED-4,Embedded Device,False,123.123.123.123,Network Name MD Ltd. consist
