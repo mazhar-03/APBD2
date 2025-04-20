@@ -163,7 +163,7 @@ public class MsSqlDeviceRepository : IDeviceRepository
             command.Parameters.AddWithValue("@Id", id);
             command.Parameters.AddWithValue("@Name", device.Name);
             command.Parameters.AddWithValue("@IsOn", device.IsOn);
-            command.Parameters.AddWithValue("@BatteryPercentage", device.OperatingSystem);
+            command.Parameters.AddWithValue("@OperatingSystem", device.OperatingSystem);
             connection.Open();
             rowsAffected = command.ExecuteNonQuery();
         }
@@ -222,7 +222,7 @@ public class MsSqlDeviceRepository : IDeviceRepository
     public bool AddEmbeddedDevice(EmbeddedDevices device)
     {
         var insert =
-            "INSERT INTO EmbeddedDevices (Id, Name, IsOn, IpName, NetworkName) VALUES (@Id, @Name, @IsOn, @IPName, @NetworkName))";
+            "INSERT INTO EmbeddedDevices (Id, Name, IsOn, IpName, NetworkName) VALUES (@Id, @Name, @IsOn, @IPName, @NetworkName)";
         int rowsAffected = 0;
 
         using (SqlConnection connection = new SqlConnection(_connectionString))
