@@ -4,6 +4,8 @@ using DeviceManager.Entities;
 using DeviceManager.Logic;
 using Microsoft.AspNetCore.Mvc;
 
+namespace WebApplication1.Controllers;
+
 [ApiController]
 [Route("api/devices")]
 public class DevicesController : ControllerBase
@@ -32,7 +34,7 @@ public class DevicesController : ControllerBase
     [HttpGet("{id}")]
     public IResult GetDeviceById(string id)
     {
-        Device device = null;
+        Device? device = null;
         if (id.StartsWith("p-")) device = _database.GetPersonalComputerById(id.ToLower());
         else if (id.StartsWith("ed-")) device = _database.GetEmbeddedDevicesById(id.ToLower());
         else if (id.StartsWith("sw-")) device = _database.GetSmartwatchById(id.ToLower());
@@ -42,28 +44,141 @@ public class DevicesController : ControllerBase
         return Results.Ok(device);
     }
 
-    
-[HttpPost]
-public async Task<IResult> AddDevice()
-{
-    var request = Request;
-    var contentType = request.ContentType?.ToLower();
 
-    try
+    [HttpPost]
+    public async Task<IResult> AddDevice()
     {
-        switch (contentType)
+        var request = Request;
+        var contentType = request.ContentType?.ToLower();
+
+        try
         {
-            case "application/json":
+            switch (contentType)
             {
-                using var reader = new StreamReader(request.Body);
-                var rawJson = await reader.ReadToEndAsync();
+                case "application/json":
+                {
+                    using var reader = new StreamReader(request.Body);
+                    var rawJson = await reader.ReadToEndAsync();
 
-                var json = JsonNode.Parse(rawJson);
-                if (json == null) return Results.BadRequest("NULL JSON.");
+                    var json = JsonNode.Parse(rawJson);
+                    if (json == null) return Results.BadRequest("NULL JSON.");
 
-                var id = json["id"]?.ToString();
-                if (string.IsNullOrWhiteSpace(id))
-                    return Results.BadRequest("Missing 'id' field.");
+                    var id = json["id"]?.ToString();
+                    if (string.IsNullOrWhiteSpace(id))
+                        return Results.BadRequest("Missing 'id' field.");
+
+                    var type = id.Split('-')[0].ToLower();
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+                    switch (type)
+                    {
+                        case "sw":
+                            var sw = JsonSerializer.Deserialize<Smartwatches>(json.ToJsonString(), options);
+                            if (sw != null && _database.AddSmartwatch(sw)) return Results.Created();
+                            break;
+
+                        case "p":
+                            var pc = JsonSerializer.Deserialize<PersonalComputer>(json.ToJsonString(), options);
+                            if (pc != null)
+                            {
+                                if (pc.IsOn) pc.TurnOn();
+                                if (_database.AddPersonalComputer(pc)) return Results.Created();
+                            }
+
+                            break;
+
+                        case "ed":
+                            var ed = JsonSerializer.Deserialize<EmbeddedDevices>(json.ToJsonString(), options);
+                            if (ed != null && _database.AddEmbeddedDevice(ed)) return Results.Created();
+                            break;
+
+                        default:
+                            return Results.BadRequest("Unsupported device type.");
+                    }
+
+                    return Results.BadRequest("Failed to insert device.");
+                }
+
+                case "text/plain":
+                {
+                    using var reader = new StreamReader(request.Body);
+                    var line = await reader.ReadToEndAsync();
+
+                    var parts = line.Split(',');
+                    if (parts.Length < 4)
+                        return Results.BadRequest("Invalid format. Use: ID,Name,IsOn,[...additional data]");
+
+                    var id = parts[0];
+                    var type = id.Split('-')[0].ToLower();
+
+                    switch (type)
+                    {
+                        case "sw":
+                            var sw = new Smartwatches(
+                                id,
+                                parts[1],
+                                bool.Parse(parts[2]),
+                                int.Parse(parts[3].Replace("%", ""))
+                            );
+                            if (_database.AddSmartwatch(sw)) return Results.Created();
+                            break;
+
+                        case "p":
+                            var pc = new PersonalComputer(
+                                id,
+                                parts[1],
+                                bool.Parse(parts[2]),
+                                parts[3]
+                            );
+                            if (pc.IsOn) pc.TurnOn();
+                            if (_database.AddPersonalComputer(pc)) return Results.Created();
+                            break;
+
+                        case "ed":
+                            if (parts.Length < 5)
+                                return Results.BadRequest(
+                                    "EmbeddedDevices need 5 values: ID,Name,IsOn,IpName,NetworkName");
+
+                            var ed = new EmbeddedDevices(
+                                id,
+                                parts[1],
+                                bool.Parse(parts[2]),
+                                parts[3],
+                                parts[4]
+                            );
+                            if (_database.AddEmbeddedDevice(ed)) return Results.Created();
+                            break;
+
+                        default:
+                            return Results.BadRequest("Unsupported device type.");
+                    }
+
+                    return Results.BadRequest("Failed to insert device.");
+                }
+
+                default:
+                    return Results.Conflict("Unsupported device type.");
+            }
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error: {ex.Message}");
+        }
+    }
+
+    
+    [HttpPut("{id}")]
+    public async Task<IResult> UpdateDevice(string id)
+    {
+        try
+        {
+            using var reader = new StreamReader(Request.Body);
+            var rawJson = await reader.ReadToEndAsync();
+
+            var json = JsonNode.Parse(rawJson);
+            if (json != null)
+            {
+                json["id"] = id;
 
                 var type = id.Split('-')[0].ToLower();
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -72,124 +187,49 @@ public async Task<IResult> AddDevice()
                 {
                     case "sw":
                         var sw = JsonSerializer.Deserialize<Smartwatches>(json.ToJsonString(), options);
-                        if (sw != null && _database.AddSmartwatch(sw)) return Results.Created();
+                        if (sw != null)
+                        {
+                            sw.Id = id;
+                            if (_database.UpdateSmartwatch(id, sw)) return Results.Ok("Smartwatch updated.");
+                        }
+
                         break;
 
                     case "p":
                         var pc = JsonSerializer.Deserialize<PersonalComputer>(json.ToJsonString(), options);
                         if (pc != null)
                         {
+                            pc.Id = id;
                             if (pc.IsOn) pc.TurnOn();
-                            if (_database.AddPersonalComputer(pc)) return Results.Created();
+                            if (_database.UpdatePersonalComputer(id, pc)) return Results.Ok("PC updated.");
                         }
+
                         break;
 
                     case "ed":
                         var ed = JsonSerializer.Deserialize<EmbeddedDevices>(json.ToJsonString(), options);
-                        if (ed != null && _database.AddEmbeddedDevice(ed)) return Results.Created();
+                        if (ed != null)
+                        {
+                            ed.Id = id;
+                            if (_database.UpdateEmbeddedDevice(id, ed)) return Results.Ok("Embedded device updated.");
+                        }
+
                         break;
 
                     default:
                         return Results.BadRequest("Unsupported device type.");
                 }
-
-                return Results.BadRequest("Failed to insert device.");
             }
 
-            case "text/plain":
-            {
-                using var reader = new StreamReader(request.Body);
-                string line = await reader.ReadToEndAsync();
-
-                string[] parts = line.Split(',');
-                if (parts.Length < 4)
-                    return Results.BadRequest("Invalid format. Use: ID,Name,IsOn,[...additional data]");
-
-                string id = parts[0];
-                string type = id.Split('-')[0].ToLower();
-
-                switch (type)
-                {
-                    case "sw":
-                        var sw = new Smartwatches(
-                            id,
-                            parts[1],
-                            bool.Parse(parts[2]),
-                            int.Parse(parts[3].Replace("%", ""))
-                        );
-                        if (_database.AddSmartwatch(sw)) return Results.Created();
-                        break;
-
-                    case "p":
-                        var pc = new PersonalComputer(
-                            id,
-                            parts[1],
-                            bool.Parse(parts[2]),
-                            parts[3]
-                        );
-                        if (pc.IsOn) pc.TurnOn();
-                        if (_database.AddPersonalComputer(pc)) return Results.Created();
-                        break;
-
-                    case "ed":
-                        if (parts.Length < 5)
-                            return Results.BadRequest("EmbeddedDevices need 5 values: ID,Name,IsOn,IpName,NetworkName");
-
-                        var ed = new EmbeddedDevices(
-                            id,
-                            parts[1],
-                            bool.Parse(parts[2]),
-                            parts[3],
-                            parts[4]
-                        );
-                        if (_database.AddEmbeddedDevice(ed)) return Results.Created();
-                        break;
-
-                    default:
-                        return Results.BadRequest("Unsupported device type.");
-                }
-
-                return Results.BadRequest("Failed to insert device.");
-            }
-
-            default:
-                return Results.Conflict("Unsupported device type.");
-        }
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem($"Error: {ex.Message}");
-    }
-}
-
-
-    [HttpPut("sw/{id}")]
-    public IResult UpdateSmartwatch(string id, [FromBody] Smartwatches updatedDevice)
-    {
-        try
-        {
-            var success = _database.UpdateSmartwatch(id, updatedDevice);
-            return success ? Results.Ok("Device fully updated.") : Results.NotFound("Device not found.");
+            return Results.BadRequest("Failed to update device.");
         }
         catch (Exception ex)
         {
-            return Results.BadRequest($"Update failed: {ex.Message}");
+            return Results.Problem($"Error: {ex.Message}");
         }
     }
 
-    [HttpPut("ed/{id}")]
-    public IResult UpdateEmbeddedDevice(string id, [FromBody] EmbeddedDevices updatedDevice)
-    {
-        try
-        {
-            var success = _database.UpdateEmbeddedDevice(id, updatedDevice);
-            return success ? Results.Ok("Device fully updated.") : Results.NotFound("Device not found.");
-        }
-        catch (Exception ex)
-        {
-            return Results.BadRequest($"Update failed: {ex.Message}");
-        }
-    }
+
 
     [HttpDelete("{id}")]
     public IResult DeleteDevice(string id)
