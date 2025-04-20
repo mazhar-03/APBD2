@@ -7,11 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DeviceManager.Entities\DeviceManager.Entities.csproj" />
+        <ProjectReference Include="..\DeviceManager.Entities\DeviceManager.Entities.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1"/>
     </ItemGroup>
 
 </Project>
