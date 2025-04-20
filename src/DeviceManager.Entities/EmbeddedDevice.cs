@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace DeviceManager.Entities;
 
@@ -19,7 +18,6 @@ public class EmbeddedDevices : Device
     /// <param name="isOn">Whether the device is on initially.</param>
     /// <param name="ipName">The IP address (matches IpName property).</param>
     /// <param name="networkName">The network name (matches NetworkName property).</param>
-    [JsonConstructor]
     public EmbeddedDevices(string id, string name, bool isOn, string ipName, string networkName)
         : base(id, name, isOn)
     {
