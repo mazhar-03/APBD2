@@ -15,7 +15,8 @@ public class DatabaseService : IDatabaseService
     public IEnumerable<Smartwatches> GetAllSmartwatches()
     {
         var smartwatches = new List<Smartwatches>();
-        var sql = "SELECT * FROM Smartwatches";
+        var sql =
+            "SELECT d.Id, d.Name, d.IsEnabled, s.BatteryPercentage FROM Device d JOIN Smartwatch s ON d.Id = s.DeviceId";
 
         using (var connection = new SqlConnection(_connectionString))
         {
@@ -49,7 +50,8 @@ public class DatabaseService : IDatabaseService
     public Smartwatches GetSmartwatchById(string id)
     {
         Smartwatches smartwatch = null;
-        var sql = "SELECT * FROM Smartwatches WHERE id=@id";
+        var sql =
+            "SELECT d.Id, d.Name, d.IsEnabled, s.BatteryPercentage FROM Device d JOIN Smartwatch s ON d.Id = s.DeviceId WHERE d.Id = @id";
 
         using (var connection = new SqlConnection(_connectionString))
         {
@@ -80,65 +82,111 @@ public class DatabaseService : IDatabaseService
 
     public bool AddSmartwatch(Smartwatches device)
     {
-        var insert =
-            "INSERT INTO Smartwatches (Id, Name, IsOn, BatteryPercentage) VALUES (@Id, @Name, @IsOn, @BatteryPercentage)";
-
-        var rowsAffected = 0;
+        var insertDevice = "INSERT INTO Device (Id, Name, IsEnabled) VALUES (@Id, @Name, @IsEnabled)";
+        var insertSw =
+            "INSERT INTO Smartwatch (Id, BatteryPercentage, DeviceId) VALUES (@SwId, @BatteryPercentage, @DeviceId)";
 
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(insert, connection);
-            command.Parameters.AddWithValue("@Id", device.Id);
-            command.Parameters.AddWithValue("@Name", device.Name);
-            command.Parameters.AddWithValue("@IsOn", device.IsOn);
-            command.Parameters.AddWithValue("@BatteryPercentage", device.BatteryPercentage);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
 
-        return rowsAffected > 0;
+            try
+            {
+                var deviceCommand = new SqlCommand(insertDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", device.Id);
+                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
+                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
+                deviceCommand.ExecuteNonQuery();
+
+                var swCommand = new SqlCommand(insertSw, connection, transaction);
+                var swId = GetIntId(device);
+                swCommand.Parameters.AddWithValue("@SwId", swId);
+                swCommand.Parameters.AddWithValue("@BatteryPercentage", device.BatteryPercentage);
+                swCommand.Parameters.AddWithValue("@DeviceId", device.Id);
+                swCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
     }
 
     public bool UpdateSmartwatch(string id, Smartwatches device)
     {
-        var update =
-            "UPDATE Smartwatches SET Name = @Name, IsOn = @IsOn, BatteryPercentage = @BatteryPercentage WHERE Id = @Id";
-        var rowsAffected = 0;
-
+        var updateDevice = "UPDATE Device SET Name = @Name, IsEnabled = @IsEnabled WHERE Id = @Id";
+        var updateSw = "UPDATE Smartwatch SET BatteryPercentage = @BatteryPercentage WHERE DeviceId = @DeviceId";
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(update, connection);
-            command.Parameters.AddWithValue("@Id", id);
-            command.Parameters.AddWithValue("@Name", device.Name);
-            command.Parameters.AddWithValue("@IsOn", device.IsOn);
-            command.Parameters.AddWithValue("@BatteryPercentage", device.BatteryPercentage);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
 
-        return rowsAffected > 0;
+            try
+            {
+                var deviceCommand = new SqlCommand(updateDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", id);
+                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
+                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
+                deviceCommand.ExecuteNonQuery();
+
+                var swCommand = new SqlCommand(updateSw, connection, transaction);
+                var swId = GetIntId(device);
+                swCommand.Parameters.AddWithValue("@SwId", swId);
+                swCommand.Parameters.AddWithValue("@BatteryPercentage", device.BatteryPercentage);
+                swCommand.Parameters.AddWithValue("@DeviceId", device.Id);
+                swCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
     }
 
     public bool DeleteSmartwatch(string id)
     {
-        var delete = "DELETE FROM Smartwatches WHERE Id = @Id";
-        var rowsAffected = 0;
+        var deleteSw = "DELETE FROM Smartwatch WHERE DeviceId = @Id";
+        var deleteDevice = "DELETE FROM Device WHERE Id = @Id";
 
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(delete, connection);
-            command.Parameters.AddWithValue("@Id", id);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                var swCommand = new SqlCommand(deleteSw, connection, transaction);
+                swCommand.Parameters.AddWithValue("@Id", id);
+                swCommand.ExecuteNonQuery();
 
-        return rowsAffected > 0;
+                var deviceCommand = new SqlCommand(deleteDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", id);
+                deviceCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
     }
 
     public IEnumerable<PersonalComputer> GetAllPersonalComputers()
     {
         var pcs = new List<PersonalComputer>();
-        var sql = "SELECT * FROM PersonalComputers";
+        var sql =
+            "SELECT d.Id, d.Name, d.IsEnabled, pc.OperationSystem FROM Device d JOIN PersonalComputer pc ON d.Id = pc.DeviceId";
 
         using (var connection = new SqlConnection(_connectionString))
         {
@@ -147,18 +195,16 @@ public class DatabaseService : IDatabaseService
             var reader = command.ExecuteReader();
             try
             {
-                if (reader.HasRows)
-                    while (reader.Read())
-                    {
-                        var pc = new PersonalComputer
-                        (
-                            reader.GetString(0),
-                            reader.GetString(1),
-                            reader.GetBoolean(2),
-                            reader.GetString(3)
-                        );
-                        pcs.Add(pc);
-                    }
+                while (reader.Read())
+                {
+                    var pc = new PersonalComputer(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetBoolean(2),
+                        reader.IsDBNull(3) ? null : reader.GetString(3)
+                    );
+                    pcs.Add(pc);
+                }
             }
             finally
             {
@@ -172,7 +218,8 @@ public class DatabaseService : IDatabaseService
     public PersonalComputer GetPersonalComputerById(string id)
     {
         PersonalComputer pc = null;
-        var sql = "SELECT * FROM PersonalComputers WHERE id=@id";
+        var sql =
+            "SELECT d.Id, d.Name, d.IsEnabled, pc.OperationSystem FROM Device d JOIN PersonalComputer pc ON d.Id = pc.DeviceId WHERE d.Id = @id";
 
         using (var connection = new SqlConnection(_connectionString))
         {
@@ -182,15 +229,13 @@ public class DatabaseService : IDatabaseService
             var reader = command.ExecuteReader();
             try
             {
-                if (reader.HasRows)
-                    while (reader.Read())
-                        pc = new PersonalComputer
-                        (
-                            reader.GetString(0),
-                            reader.GetString(1),
-                            reader.GetBoolean(2),
-                            reader.GetString(3)
-                        );
+                if (reader.Read())
+                    pc = new PersonalComputer(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetBoolean(2),
+                        reader.IsDBNull(3) ? null : reader.GetString(3)
+                    );
             }
             finally
             {
@@ -203,64 +248,108 @@ public class DatabaseService : IDatabaseService
 
     public bool AddPersonalComputer(PersonalComputer device)
     {
-        var insert =
-            "INSERT INTO PersonalComputers (Id, Name, IsOn, OperatingSystem) VALUES (@Id, @Name, @IsOn, @OperatingSystem)";
-        var rowsAffected = 0;
+        var insertDevice = "INSERT INTO Device (Id, Name, IsEnabled) VALUES (@Id, @Name, @IsEnabled)";
+        var insertPC =
+            "INSERT INTO PersonalComputer (Id, OperationSystem, DeviceId) VALUES (@PcId, @OperationSystem, @DeviceId)";
 
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(insert, connection);
-            command.Parameters.AddWithValue("@Id", device.Id);
-            command.Parameters.AddWithValue("@Name", device.Name);
-            command.Parameters.AddWithValue("@IsOn", device.IsOn);
-            command.Parameters.AddWithValue("@OperatingSystem", device.OperatingSystem);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                var deviceCommand = new SqlCommand(insertDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", device.Id);
+                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
+                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
+                deviceCommand.ExecuteNonQuery();
 
-        return rowsAffected > 0;
+                var pcCommand = new SqlCommand(insertPC, connection, transaction);
+                var pcId = GetIntId(device);
+                pcCommand.Parameters.AddWithValue("@PcId", pcId);
+                pcCommand.Parameters.AddWithValue("@OperationSystem", device.OperatingSystem ?? (object)DBNull.Value);
+                pcCommand.Parameters.AddWithValue("@DeviceId", device.Id);
+                pcCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
     }
 
     public bool UpdatePersonalComputer(string id, PersonalComputer device)
     {
-        var update =
-            "UPDATE PersonalComputers SET Name = @Name, IsOn = @IsOn, OperatingSystem = @OperatingSystem WHERE Id = @Id";
-        var rowsAffected = 0;
+        var updateDevice = "UPDATE Device SET Name = @Name, IsEnabled = @IsEnabled WHERE Id = @Id";
+        var updatePC = "UPDATE PersonalComputer SET OperationSystem = @OperationSystem WHERE DeviceId = @DeviceId";
 
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(update, connection);
-            command.Parameters.AddWithValue("@Id", id);
-            command.Parameters.AddWithValue("@Name", device.Name);
-            command.Parameters.AddWithValue("@IsOn", device.IsOn);
-            command.Parameters.AddWithValue("@OperatingSystem", device.OperatingSystem);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                var deviceCommand = new SqlCommand(updateDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", id);
+                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
+                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
+                deviceCommand.ExecuteNonQuery();
 
-        return rowsAffected > 0;
+                var pcCommand = new SqlCommand(updatePC, connection, transaction);
+                pcCommand.Parameters.AddWithValue("@OperationSystem", device.OperatingSystem ?? (object)DBNull.Value);
+                pcCommand.Parameters.AddWithValue("@DeviceId", id);
+                pcCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
     }
 
     public bool DeletePersonalComputer(string id)
     {
-        var delete = "DELETE FROM PersonalComputers WHERE Id = @Id";
-        var rowsAffected = 0;
+        var deletePC = "DELETE FROM PersonalComputer WHERE DeviceId = @Id";
+        var deleteDevice = "DELETE FROM Device WHERE Id = @Id";
 
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(delete, connection);
-            command.Parameters.AddWithValue("@Id", id);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                var pcCommand = new SqlCommand(deletePC, connection, transaction);
+                pcCommand.Parameters.AddWithValue("@Id", id);
+                pcCommand.ExecuteNonQuery();
 
-        return rowsAffected > 0;
+                var deviceCommand = new SqlCommand(deleteDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", id);
+                deviceCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
     }
 
     public IEnumerable<EmbeddedDevices> GetAllEmbeddedDevices()
     {
         var eds = new List<EmbeddedDevices>();
-        var sql = "SELECT * FROM EmbeddedDevices";
+        var sql =
+            "SELECT d.Id, d.Name, d.IsEnabled, e.IpAddress, e.NetworkName FROM Device d JOIN Embedded e ON d.Id = e.DeviceId";
 
         using (var connection = new SqlConnection(_connectionString))
         {
@@ -269,19 +358,17 @@ public class DatabaseService : IDatabaseService
             var reader = command.ExecuteReader();
             try
             {
-                if (reader.HasRows)
-                    while (reader.Read())
-                    {
-                        var ed = new EmbeddedDevices
-                        (
-                            reader.GetString(0),
-                            reader.GetString(1),
-                            reader.GetBoolean(2),
-                            reader.GetString(3),
-                            reader.GetString(4)
-                        );
-                        eds.Add(ed);
-                    }
+                while (reader.Read())
+                {
+                    var ed = new EmbeddedDevices(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetBoolean(2),
+                        reader.GetString(3),
+                        reader.GetString(4)
+                    );
+                    eds.Add(ed);
+                }
             }
             finally
             {
@@ -295,7 +382,8 @@ public class DatabaseService : IDatabaseService
     public EmbeddedDevices GetEmbeddedDevicesById(string id)
     {
         EmbeddedDevices ed = null;
-        var sql = "SELECT * FROM EmbeddedDevices WHERE id=@id";
+        var sql =
+            "SELECT d.Id, d.Name, d.IsEnabled, e.IpAddress, e.NetworkName FROM Device d JOIN Embedded e ON d.Id = e.DeviceId WHERE d.Id = @id";
 
         using (var connection = new SqlConnection(_connectionString))
         {
@@ -305,16 +393,14 @@ public class DatabaseService : IDatabaseService
             var reader = command.ExecuteReader();
             try
             {
-                if (reader.HasRows)
-                    while (reader.Read())
-                        ed = new EmbeddedDevices
-                        (
-                            reader.GetString(0),
-                            reader.GetString(1),
-                            reader.GetBoolean(2),
-                            reader.GetString(3),
-                            reader.GetString(4)
-                        );
+                if (reader.Read())
+                    ed = new EmbeddedDevices(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetBoolean(2),
+                        reader.GetString(3),
+                        reader.GetString(4)
+                    );
             }
             finally
             {
@@ -327,59 +413,108 @@ public class DatabaseService : IDatabaseService
 
     public bool AddEmbeddedDevice(EmbeddedDevices device)
     {
-        var insert =
-            "INSERT INTO EmbeddedDevices (Id, Name, IsOn, IpName, NetworkName) VALUES (@Id, @Name, @IsOn, @IPName, @NetworkName)";
-        var rowsAffected = 0;
+        var insertDevice = "INSERT INTO Device (Id, Name, IsEnabled) VALUES (@Id, @Name, @IsEnabled)";
+        var insertED =
+            "INSERT INTO Embedded (Id, IpAddress, NetworkName, DeviceId) VALUES (@EdId, @Ip, @Network, @DeviceId)";
 
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(insert, connection);
-            command.Parameters.AddWithValue("@Id", device.Id);
-            command.Parameters.AddWithValue("@Name", device.Name);
-            command.Parameters.AddWithValue("@IsOn", device.IsOn);
-            command.Parameters.AddWithValue("@IpName", device.IpName);
-            command.Parameters.AddWithValue("@NetworkName", device.NetworkName);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                var deviceCommand = new SqlCommand(insertDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", device.Id);
+                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
+                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
+                deviceCommand.ExecuteNonQuery();
 
-        return rowsAffected > 0;
+                var edId = GetIntId(device);
+
+                var edCommand = new SqlCommand(insertED, connection, transaction);
+                edCommand.Parameters.AddWithValue("@EdId", edId);
+                edCommand.Parameters.AddWithValue("@Ip", device.IpName);
+                edCommand.Parameters.AddWithValue("@Network", device.NetworkName);
+                edCommand.Parameters.AddWithValue("@DeviceId", device.Id);
+                edCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
     }
 
     public bool UpdateEmbeddedDevice(string id, EmbeddedDevices device)
     {
-        var update =
-            "UPDATE EmbeddedDevices SET Name = @Name, IsOn = @IsOn, IpName = @IpName, NetworkName = @NetworkName WHERE Id = @Id";
-        var rowsAffected = 0;
+        var updateDevice = "UPDATE Device SET Name = @Name, IsEnabled = @IsEnabled WHERE Id = @Id";
+        var updateED = "UPDATE Embedded SET IpAddress = @Ip, NetworkName = @Network WHERE DeviceId = @DeviceId";
 
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(update, connection);
-            command.Parameters.AddWithValue("@Id", device.Id);
-            command.Parameters.AddWithValue("@Name", device.Name);
-            command.Parameters.AddWithValue("@IsOn", device.IsOn);
-            command.Parameters.AddWithValue("@IpName", device.IpName);
-            command.Parameters.AddWithValue("@NetworkName", device.NetworkName);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                var deviceCommand = new SqlCommand(updateDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", id);
+                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
+                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
+                deviceCommand.ExecuteNonQuery();
 
-        return rowsAffected > 0;
+                var edCommand = new SqlCommand(updateED, connection, transaction);
+                edCommand.Parameters.AddWithValue("@Ip", device.IpName);
+                edCommand.Parameters.AddWithValue("@Network", device.NetworkName);
+                edCommand.Parameters.AddWithValue("@DeviceId", id);
+                edCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
     }
 
     public bool DeleteEmbeddedDevice(string id)
     {
-        var delete = "DELETE FROM EmbeddedDevices WHERE Id = @Id";
-        var rowsAffected = 0;
+        var deleteED = "DELETE FROM Embedded WHERE DeviceId = @Id";
+        var deleteDevice = "DELETE FROM Device WHERE Id = @Id";
 
         using (var connection = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(delete, connection);
-            command.Parameters.AddWithValue("@Id", id);
             connection.Open();
-            rowsAffected = command.ExecuteNonQuery();
-        }
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                var edCommand = new SqlCommand(deleteED, connection, transaction);
+                edCommand.Parameters.AddWithValue("@Id", id);
+                edCommand.ExecuteNonQuery();
 
-        return rowsAffected > 0;
+                var deviceCommand = new SqlCommand(deleteDevice, connection, transaction);
+                deviceCommand.Parameters.AddWithValue("@Id", id);
+                deviceCommand.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
+    }
+
+    private static int GetIntId(Device device)
+    {
+        return int.Parse(device.Id.Split('-')[1]);
     }
 }
