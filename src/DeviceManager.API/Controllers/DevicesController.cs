@@ -22,15 +22,8 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            var allDevices = _database
-                        .GetAllSmartwatches()
-                        .Cast<Device>()
-                        .Concat(_database.GetAllPersonalComputers())
-                        .Concat(_database.GetAllEmbeddedDevices());
-            
-                    var summary = allDevices.Select(d => new { d.Id, d.Name, d.IsOn });
-            
-                    return Results.Ok(summary);
+            var summary = _database.GetAllDevices();
+            return Results.Ok(summary);
         }
         catch (EmptyBatteryException ex)
         {
@@ -60,13 +53,13 @@ public class DevicesController : ControllerBase
         try
         {
             Device? device = null;
-                    if (id.StartsWith("p-")) device = _database.GetPersonalComputerById(id.ToLower());
-                    else if (id.StartsWith("ed-")) device = _database.GetEmbeddedDevicesById(id.ToLower());
-                    else if (id.StartsWith("sw-")) device = _database.GetSmartwatchById(id.ToLower());
-            
-                    if (device == null) return Results.NotFound("Device not found");
-            
-                    return Results.Ok(device);
+            if (id.StartsWith("p-")) device = _database.GetPersonalComputerById(id.ToLower());
+            else if (id.StartsWith("ed-")) device = _database.GetEmbeddedDevicesById(id.ToLower());
+            else if (id.StartsWith("sw-")) device = _database.GetSmartwatchById(id.ToLower());
+
+            if (device == null) return Results.NotFound("Device not found");
+
+            return Results.Ok(device);
         }
         catch (EmptyBatteryException ex)
         {
@@ -112,7 +105,7 @@ public class DevicesController : ControllerBase
                     var id = json["id"]?.ToString();
                     if (string.IsNullOrWhiteSpace(id))
                         return Results.BadRequest("Missing 'id' field.");
-                    
+
                     if (_database.DeviceExists(id))
                         return Results.Conflict("Device with this ID already exists.");
 
@@ -155,12 +148,13 @@ public class DevicesController : ControllerBase
 
                     var parts = line.Split(',');
                     if (parts.Length < 4)
-                        return Results.BadRequest("Invalid format. Use: ID,Name,IsOn,[additional data depends on the deviceType]");
+                        return Results.BadRequest(
+                            "Invalid format. Use: ID,Name,IsOn,[additional data depends on the deviceType]");
 
                     var id = parts[0];
                     if (_database.DeviceExists(id))
                         return Results.Conflict("Device with this ID already exists.");
-                    
+
                     var type = id.Split('-')[0].ToLower();
 
                     switch (type)
@@ -172,7 +166,7 @@ public class DevicesController : ControllerBase
                                 bool.Parse(parts[2]),
                                 int.Parse(parts[3].Replace("%", ""))
                             );
-                            if(sw.IsOn) sw.TurnOn();
+                            if (sw.IsOn) sw.TurnOn();
                             if (_database.AddSmartwatch(sw)) return Results.Created();
                             break;
 
@@ -199,13 +193,14 @@ public class DevicesController : ControllerBase
                                 parts[3],
                                 parts[4]
                             );
-                            if(ed.IsOn) ed.TurnOn();
+                            if (ed.IsOn) ed.TurnOn();
                             if (_database.AddEmbeddedDevice(ed)) return Results.Created();
                             break;
 
                         default:
                             return Results.BadRequest("Unsupported device type.");
                     }
+
                     return Results.BadRequest("Failed to insert device.");
                 }
 
@@ -262,6 +257,7 @@ public class DevicesController : ControllerBase
                             if (sw.IsOn) sw.TurnOn(); // for triggering emptyBatteryEx
                             if (_database.UpdateSmartwatch(id, sw)) return Results.Ok("Smartwatch updated.");
                         }
+
                         break;
                     case "p":
                         var pc = JsonSerializer.Deserialize<PersonalComputer>(json.ToJsonString(), options);
@@ -278,7 +274,7 @@ public class DevicesController : ControllerBase
                         if (ed != null)
                         {
                             ed.Id = id;
-                            if(ed.IsOn) ed.TurnOn(); // for triggering ConnectionException 
+                            if (ed.IsOn) ed.TurnOn(); // for triggering ConnectionException 
                             if (_database.UpdateEmbeddedDevice(id, ed)) return Results.Ok("Embedded device updated.");
                         }
 

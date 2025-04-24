@@ -1,4 +1,5 @@
 ﻿using DeviceManager.Entities;
+using DeviceManager.Entities.DTO;
 using Microsoft.Data.SqlClient;
 
 namespace DeviceManager.Logic;
@@ -12,30 +13,29 @@ public class DatabaseService : IDatabaseService
         _connectionString = connectionString;
     }
 
-    public IEnumerable<Smartwatches> GetAllSmartwatches()
+    public IEnumerable<DeviceDto> GetAllDevices()
     {
-        var smartwatches = new List<Smartwatches>();
-        var sql =
-            "SELECT d.Id, d.Name, d.IsEnabled, s.BatteryPercentage FROM Device d JOIN Smartwatch s ON d.Id = s.DeviceId";
+        var devices = new List<DeviceDto>();
+        var sql = "SELECT * FROM Device";
 
-        using (var connection = new SqlConnection(_connectionString))
+        using (var conn = new SqlConnection(_connectionString))
         {
-            var command = new SqlCommand(sql, connection);
-            connection.Open();
-            var reader = command.ExecuteReader();
+            conn.Open();
+            var cmd = new SqlCommand(sql, conn);
+
+            var reader = cmd.ExecuteReader();
             try
             {
                 if (reader.HasRows)
                     while (reader.Read())
                     {
-                        var smartwatch = new Smartwatches
+                        var device = new DeviceDto
                         (
                             reader.GetString(0),
                             reader.GetString(1),
-                            reader.GetBoolean(2),
-                            reader.GetInt32(3)
+                            reader.GetBoolean(2)
                         );
-                        smartwatches.Add(smartwatch);
+                        devices.Add(device);
                     }
             }
             finally
@@ -44,7 +44,7 @@ public class DatabaseService : IDatabaseService
             }
         }
 
-        return smartwatches;
+        return devices;
     }
 
     public Smartwatches GetSmartwatchById(string id)
@@ -182,39 +182,6 @@ public class DatabaseService : IDatabaseService
         }
     }
 
-    public IEnumerable<PersonalComputer> GetAllPersonalComputers()
-    {
-        var pcs = new List<PersonalComputer>();
-        var sql =
-            "SELECT d.Id, d.Name, d.IsEnabled, pc.OperationSystem FROM Device d JOIN PersonalComputer pc ON d.Id = pc.DeviceId";
-
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            var command = new SqlCommand(sql, connection);
-            connection.Open();
-            var reader = command.ExecuteReader();
-            try
-            {
-                while (reader.Read())
-                {
-                    var pc = new PersonalComputer(
-                        reader.GetString(0),
-                        reader.GetString(1),
-                        reader.GetBoolean(2),
-                        reader.IsDBNull(3) ? null : reader.GetString(3)
-                    );
-                    pcs.Add(pc);
-                }
-            }
-            finally
-            {
-                reader.Close();
-            }
-        }
-
-        return pcs;
-    }
-
     public PersonalComputer GetPersonalComputerById(string id)
     {
         PersonalComputer pc = null;
@@ -343,40 +310,6 @@ public class DatabaseService : IDatabaseService
                 return false;
             }
         }
-    }
-
-    public IEnumerable<EmbeddedDevices> GetAllEmbeddedDevices()
-    {
-        var eds = new List<EmbeddedDevices>();
-        var sql =
-            "SELECT d.Id, d.Name, d.IsEnabled, e.IpAddress, e.NetworkName FROM Device d JOIN Embedded e ON d.Id = e.DeviceId";
-
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            var command = new SqlCommand(sql, connection);
-            connection.Open();
-            var reader = command.ExecuteReader();
-            try
-            {
-                while (reader.Read())
-                {
-                    var ed = new EmbeddedDevices(
-                        reader.GetString(0),
-                        reader.GetString(1),
-                        reader.GetBoolean(2),
-                        reader.GetString(3),
-                        reader.GetString(4)
-                    );
-                    eds.Add(ed);
-                }
-            }
-            finally
-            {
-                reader.Close();
-            }
-        }
-
-        return eds;
     }
 
     public EmbeddedDevices GetEmbeddedDevicesById(string id)
@@ -513,21 +446,21 @@ public class DatabaseService : IDatabaseService
         }
     }
 
-    private static int GetIntId(Device device)
-    {
-        return int.Parse(device.Id.Split('-')[1]);
-    }
-
     public bool DeviceExists(string id)
     {
         var sql = "SELECT COUNT(*) FROM Device WHERE Id = @Id";
 
-        using (SqlConnection connection = new SqlConnection(_connectionString))
+        using (var connection = new SqlConnection(_connectionString))
         {
             var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Id", id);
             connection.Open();
             return Convert.ToInt32(command.ExecuteScalar()) > 0;
         }
+    }
+
+    private static int GetIntId(Device device)
+    {
+        return int.Parse(device.Id.Split('-')[1]);
     }
 }
