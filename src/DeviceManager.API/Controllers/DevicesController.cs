@@ -20,28 +20,74 @@ public class DevicesController : ControllerBase
     [HttpGet]
     public IResult GetAllDevices()
     {
-        var allDevices = _database
-            .GetAllSmartwatches()
-            .Cast<Device>()
-            .Concat(_database.GetAllPersonalComputers())
-            .Concat(_database.GetAllEmbeddedDevices());
-
-        var summary = allDevices.Select(d => new { d.Id, d.Name, d.IsOn });
-
-        return Results.Ok(summary);
+        try
+        {
+            var allDevices = _database
+                        .GetAllSmartwatches()
+                        .Cast<Device>()
+                        .Concat(_database.GetAllPersonalComputers())
+                        .Concat(_database.GetAllEmbeddedDevices());
+            
+                    var summary = allDevices.Select(d => new { d.Id, d.Name, d.IsOn });
+            
+                    return Results.Ok(summary);
+        }
+        catch (EmptyBatteryException ex)
+        {
+            return Results.BadRequest($"Battery error: {ex.Message}");
+        }
+        catch (EmptySystemException ex)
+        {
+            return Results.BadRequest($"System error: {ex.Message}");
+        }
+        catch (ConnectionException ex)
+        {
+            return Results.BadRequest($"Connection error: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest($"Argument error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Unhandled error: {ex.Message}");
+        }
     }
 
     [HttpGet("{id}")]
     public IResult GetDeviceById(string id)
     {
-        Device? device = null;
-        if (id.StartsWith("p-")) device = _database.GetPersonalComputerById(id.ToLower());
-        else if (id.StartsWith("ed-")) device = _database.GetEmbeddedDevicesById(id.ToLower());
-        else if (id.StartsWith("sw-")) device = _database.GetSmartwatchById(id.ToLower());
-
-        if (device == null) return Results.NotFound("Device not found");
-
-        return Results.Ok(device);
+        try
+        {
+            Device? device = null;
+                    if (id.StartsWith("p-")) device = _database.GetPersonalComputerById(id.ToLower());
+                    else if (id.StartsWith("ed-")) device = _database.GetEmbeddedDevicesById(id.ToLower());
+                    else if (id.StartsWith("sw-")) device = _database.GetSmartwatchById(id.ToLower());
+            
+                    if (device == null) return Results.NotFound("Device not found");
+            
+                    return Results.Ok(device);
+        }
+        catch (EmptyBatteryException ex)
+        {
+            return Results.BadRequest($"Battery error: {ex.Message}");
+        }
+        catch (EmptySystemException ex)
+        {
+            return Results.BadRequest($"System error: {ex.Message}");
+        }
+        catch (ConnectionException ex)
+        {
+            return Results.BadRequest($"Connection error: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest($"Argument error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Unhandled error: {ex.Message}");
+        }
     }
 
 
@@ -106,7 +152,7 @@ public class DevicesController : ControllerBase
 
                     var parts = line.Split(',');
                     if (parts.Length < 4)
-                        return Results.BadRequest("Invalid format. Use: ID,Name,IsOn,[...additional data]");
+                        return Results.BadRequest("Invalid format. Use: ID,Name,IsOn,[additional data depends on the deviceType]");
 
                     var id = parts[0];
                     var type = id.Split('-')[0].ToLower();
@@ -120,6 +166,7 @@ public class DevicesController : ControllerBase
                                 bool.Parse(parts[2]),
                                 int.Parse(parts[3].Replace("%", ""))
                             );
+                            if(sw.IsOn) sw.TurnOn();
                             if (_database.AddSmartwatch(sw)) return Results.Created();
                             break;
 
@@ -146,13 +193,13 @@ public class DevicesController : ControllerBase
                                 parts[3],
                                 parts[4]
                             );
+                            if(ed.IsOn) ed.TurnOn();
                             if (_database.AddEmbeddedDevice(ed)) return Results.Created();
                             break;
 
                         default:
                             return Results.BadRequest("Unsupported device type.");
                     }
-
                     return Results.BadRequest("Failed to insert device.");
                 }
 
@@ -160,13 +207,29 @@ public class DevicesController : ControllerBase
                     return Results.Conflict("Unsupported device type.");
             }
         }
+        catch (EmptyBatteryException ex)
+        {
+            return Results.BadRequest($"Battery error: {ex.Message}");
+        }
+        catch (EmptySystemException ex)
+        {
+            return Results.BadRequest($"System error: {ex.Message}");
+        }
+        catch (ConnectionException ex)
+        {
+            return Results.BadRequest($"Connection error: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest($"Argument error: {ex.Message}");
+        }
         catch (Exception ex)
         {
-            return Results.Problem($"Error: {ex.Message}");
+            return Results.Problem($"Unhandled error: {ex.Message}");
         }
     }
 
-    
+
     [HttpPut("{id}")]
     public async Task<IResult> UpdateDevice(string id)
     {
@@ -190,27 +253,26 @@ public class DevicesController : ControllerBase
                         if (sw != null)
                         {
                             sw.Id = id;
+                            if (sw.IsOn) sw.TurnOn(); // for triggering emptyBatteryEx
                             if (_database.UpdateSmartwatch(id, sw)) return Results.Ok("Smartwatch updated.");
                         }
-
                         break;
-
                     case "p":
                         var pc = JsonSerializer.Deserialize<PersonalComputer>(json.ToJsonString(), options);
                         if (pc != null)
                         {
                             pc.Id = id;
-                            if (pc.IsOn) pc.TurnOn();
+                            if (pc.IsOn) pc.TurnOn(); // for triggering emptySystemEx
                             if (_database.UpdatePersonalComputer(id, pc)) return Results.Ok("PC updated.");
                         }
 
                         break;
-
                     case "ed":
                         var ed = JsonSerializer.Deserialize<EmbeddedDevices>(json.ToJsonString(), options);
                         if (ed != null)
                         {
                             ed.Id = id;
+                            if(ed.IsOn) ed.TurnOn(); // for triggering ConnectionException 
                             if (_database.UpdateEmbeddedDevice(id, ed)) return Results.Ok("Embedded device updated.");
                         }
 
@@ -223,12 +285,27 @@ public class DevicesController : ControllerBase
 
             return Results.BadRequest("Failed to update device.");
         }
+        catch (EmptyBatteryException ex)
+        {
+            return Results.BadRequest($"Battery error: {ex.Message}");
+        }
+        catch (EmptySystemException ex)
+        {
+            return Results.BadRequest($"System error: {ex.Message}");
+        }
+        catch (ConnectionException ex)
+        {
+            return Results.BadRequest($"Connection error: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest($"Argument error: {ex.Message}");
+        }
         catch (Exception ex)
         {
-            return Results.Problem($"Error: {ex.Message}");
+            return Results.Problem($"Unhandled error: {ex.Message}");
         }
     }
-
 
 
     [HttpDelete("{id}")]

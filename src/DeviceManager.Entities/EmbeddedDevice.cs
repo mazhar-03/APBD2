@@ -8,7 +8,6 @@ namespace DeviceManager.Entities;
 public class EmbeddedDevices : Device
 {
     private string _ipAddress;
-    private string _networkName;
 
     /// <summary>
     ///     Creates a new embedded device with IP and network name.
@@ -47,16 +46,20 @@ public class EmbeddedDevices : Device
     ///     The network name the device is connected to. Must contain 'MD Ltd.'.
     /// </summary>
     /// <exception cref="ConnectionException">Thrown if the network name is not allowed.</exception>
-    public string NetworkName
+    public string NetworkName { get; set; }
+
+    public void Connect()
     {
-        get => _networkName;
-        set
-        {
-            if (!value.Contains("MD Ltd."))
-                throw new ConnectionException("Invalid network name! Must connect to 'MD Ltd.'");
-            _networkName = value;
-        }
+        if (!NetworkName.Contains("MD Ltd."))
+            throw new ConnectionException("Invalid network name! Must connect to 'MD Ltd.'");
     }
+    
+    public override void TurnOn()
+    {
+        Connect();
+        base.TurnOn();
+    }
+
 
     /// <summary>
     ///     Returns all device info as a string formatted for file storage.
