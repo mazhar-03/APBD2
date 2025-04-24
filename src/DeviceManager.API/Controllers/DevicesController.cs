@@ -112,6 +112,9 @@ public class DevicesController : ControllerBase
                     var id = json["id"]?.ToString();
                     if (string.IsNullOrWhiteSpace(id))
                         return Results.BadRequest("Missing 'id' field.");
+                    
+                    if (_database.DeviceExists(id))
+                        return Results.Conflict("Device with this ID already exists.");
 
                     var type = id.Split('-')[0].ToLower();
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -155,6 +158,9 @@ public class DevicesController : ControllerBase
                         return Results.BadRequest("Invalid format. Use: ID,Name,IsOn,[additional data depends on the deviceType]");
 
                     var id = parts[0];
+                    if (_database.DeviceExists(id))
+                        return Results.Conflict("Device with this ID already exists.");
+                    
                     var type = id.Split('-')[0].ToLower();
 
                     switch (type)

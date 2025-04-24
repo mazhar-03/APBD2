@@ -517,4 +517,17 @@ public class DatabaseService : IDatabaseService
     {
         return int.Parse(device.Id.Split('-')[1]);
     }
+
+    public bool DeviceExists(string id)
+    {
+        var sql = "SELECT COUNT(*) FROM Device WHERE Id = @Id";
+
+        using (SqlConnection connection = new SqlConnection(_connectionString))
+        {
+            var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Id", id);
+            connection.Open();
+            return Convert.ToInt32(command.ExecuteScalar()) > 0;
+        }
+    }
 }

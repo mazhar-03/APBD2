@@ -23,4 +23,5 @@ public interface IDatabaseService
     bool AddEmbeddedDevice(EmbeddedDevices device);
     bool UpdateEmbeddedDevice(string id, EmbeddedDevices device);
     bool DeleteEmbeddedDevice(string id);
+    bool DeviceExists(string id);
 }
