@@ -53,11 +53,15 @@ public class DevicesController : ControllerBase
         try
         {
             Device? device = null;
-            if (id.StartsWith("p-")) device = _database.GetPersonalComputerById(id.ToLower());
-            else if (id.StartsWith("ed-")) device = _database.GetEmbeddedDevicesById(id.ToLower());
-            else if (id.StartsWith("sw-")) device = _database.GetSmartwatchById(id.ToLower());
+            if (id.StartsWith("p-", StringComparison.OrdinalIgnoreCase))
+                device = _database.GetPersonalComputerById(id);
+            else if (id.StartsWith("ed-", StringComparison.OrdinalIgnoreCase))
+                device = _database.GetEmbeddedDevicesById(id);
+            else if (id.StartsWith("sw-", StringComparison.OrdinalIgnoreCase))
+                device = _database.GetSmartwatchById(id);
 
-            if (device == null) return Results.NotFound("Device not found");
+            if (device == null)
+                Results.NotFound($"Device with ID {id} not found.");
 
             return Results.Ok(device);
         }
@@ -98,63 +102,108 @@ public class DevicesController : ControllerBase
                 {
                     using var reader = new StreamReader(request.Body);
                     var rawJson = await reader.ReadToEndAsync();
-
                     var json = JsonNode.Parse(rawJson);
-                    if (json == null) return Results.BadRequest("NULL JSON.");
 
-                    var id = json["id"]?.ToString();
-                    if (string.IsNullOrWhiteSpace(id))
-                        return Results.BadRequest("Missing 'id' field.");
+                    if (json == null)
+                        return Results.BadRequest("Empty or invalid JSON.");
 
-                    if (_database.DeviceExists(id))
-                        return Results.Conflict("Device with this ID already exists.");
+                    var deviceType = json["deviceType"]?.ToString()?.ToLower();
+                    var name = json["name"]?.ToString();
+                    var isOnNode = json["isOn"];
 
-                    var type = id.Split('-')[0].ToLower();
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    if (string.IsNullOrWhiteSpace(deviceType))
+                        return Results.BadRequest("Missing 'deviceType'.");
+                    if (string.IsNullOrWhiteSpace(name))
+                        return Results.BadRequest("Missing 'name'.");
+                    if (isOnNode == null)
+                        return Results.BadRequest("Missing 'isOn' field.");
 
-                    switch (type)
+                    bool isOn;
+                    try
+                    {
+                        isOn = isOnNode.GetValue<bool>();
+                    }
+                    catch
+                    {
+                        return Results.BadRequest("'isOn' must be true or false.");
+                    }
+
+                    switch (deviceType)
                     {
                         case "sw":
-                            var sw = JsonSerializer.Deserialize<Smartwatches>(json.ToJsonString(), options);
-                            if (sw != null && _database.AddSmartwatch(sw)) return Results.Created();
+                            var batteryNode = json["batteryPercentage"];
+                            if (batteryNode == null)
+                                return Results.BadRequest("Missing 'batteryPercentage' field for smartwatch.");
+
+                            int battery;
+                            try
+                            {
+                                battery = batteryNode.GetValue<int>();
+                            }
+                            catch
+                            {
+                                return Results.BadRequest("'batteryPercentage' must be an integer.");
+                            }
+
+                            var sw = new Smartwatches(
+                                _database.GenerateNewId("sw"),
+                                name,
+                                isOn,
+                                battery
+                            );
+                            if (sw.IsOn) sw.TurnOn();
+                            if (_database.AddSmartwatch(sw)) return Results.Created();
                             break;
 
                         case "p":
-                            var pc = JsonSerializer.Deserialize<PersonalComputer>(json.ToJsonString(), options);
-                            if (pc != null)
-                            {
-                                if (pc.IsOn) pc.TurnOn();
-                                if (_database.AddPersonalComputer(pc)) return Results.Created();
-                            }
+                            var os = json["operatingSystem"]?.ToString();
+                            if (string.IsNullOrWhiteSpace(os))
+                                return Results.BadRequest("Missing 'operatingSystem' for personal computer.");
 
+                            var pc = new PersonalComputer(
+                                _database.GenerateNewId("p"),
+                                name,
+                                isOn,
+                                os
+                            );
+                            if (pc.IsOn) pc.TurnOn();
+                            if (_database.AddPersonalComputer(pc)) return Results.Created();
                             break;
 
                         case "ed":
-                            var ed = JsonSerializer.Deserialize<EmbeddedDevices>(json.ToJsonString(), options);
-                            if (ed != null && _database.AddEmbeddedDevice(ed)) return Results.Created();
+                            var ip = json["ipName"]?.ToString();
+                            var network = json["networkName"]?.ToString();
+                            if (string.IsNullOrWhiteSpace(ip) || string.IsNullOrWhiteSpace(network))
+                                return Results.BadRequest("Missing 'ipName' or 'networkName' for embedded device.");
+
+                            var ed = new EmbeddedDevices(
+                                _database.GenerateNewId("ed"),
+                                name,
+                                isOn,
+                                ip,
+                                network
+                            );
+                            if (ed.IsOn) ed.TurnOn();
+                            if (_database.AddEmbeddedDevice(ed)) return Results.Created();
                             break;
 
                         default:
-                            return Results.BadRequest("Unsupported device type.");
+                            return Results.BadRequest("Unsupported deviceType.");
                     }
 
-                    return Results.BadRequest("Failed to insert device.");
+                    return Results.BadRequest("Device creation failed.");
                 }
 
                 case "text/plain":
                 {
                     using var reader = new StreamReader(request.Body);
                     var line = await reader.ReadToEndAsync();
-
                     var parts = line.Split(',');
+
                     if (parts.Length < 4)
-                        return Results.BadRequest(
-                            "Invalid format. Use: ID,Name,IsOn,[additional data depends on the deviceType]");
+                        return Results.BadRequest("Invalid plain text format. Expected: ID,Name,IsOn,...");
 
                     var id = parts[0];
-                    if (_database.DeviceExists(id))
-                        return Results.Conflict("Device with this ID already exists.");
-
                     var type = id.Split('-')[0].ToLower();
 
                     switch (type)
@@ -184,7 +233,7 @@ public class DevicesController : ControllerBase
                         case "ed":
                             if (parts.Length < 5)
                                 return Results.BadRequest(
-                                    "EmbeddedDevices need 5 values: ID,Name,IsOn,IpName,NetworkName");
+                                    "Embedded devices require 5 fields: ID,Name,IsOn,IpName,NetworkName");
 
                             var ed = new EmbeddedDevices(
                                 id,
@@ -198,14 +247,14 @@ public class DevicesController : ControllerBase
                             break;
 
                         default:
-                            return Results.BadRequest("Unsupported device type.");
+                            return Results.BadRequest("Unsupported device type in plain text import.");
                     }
 
-                    return Results.BadRequest("Failed to insert device.");
+                    return Results.BadRequest("Device creation from plain text failed.");
                 }
 
                 default:
-                    return Results.Conflict("Unsupported device type.");
+                    return Results.BadRequest("Unsupported Content-Type. Use application/json or text/plain.");
             }
         }
         catch (EmptyBatteryException ex)
@@ -309,16 +358,20 @@ public class DevicesController : ControllerBase
         }
     }
 
-
     [HttpDelete("{id}")]
     public IResult DeleteDevice(string id)
     {
+        if(!_database.DeviceExists(id)) return Results.NotFound($"Device with ID {id} not found.");
         try
         {
             var success = false;
-            if (id.StartsWith("p-")) success = _database.DeletePersonalComputer(id.ToLower());
-            else if (id.StartsWith("sw-")) success = _database.DeleteSmartwatch(id.ToLower());
-            else if (id.StartsWith("ed-")) success = _database.DeleteEmbeddedDevice(id.ToLower());
+            if (id.StartsWith("p-", StringComparison.OrdinalIgnoreCase))
+                success = _database.DeletePersonalComputer(id);
+            else if (id.StartsWith("sw-", StringComparison.OrdinalIgnoreCase))
+                success = _database.DeleteSmartwatch(id);
+            else if (id.StartsWith("ed-", StringComparison.OrdinalIgnoreCase))
+                success = _database.DeleteEmbeddedDevice(id);
+
             return success ? Results.Ok("Device deleted") : Results.NotFound("Device not found.");
         }
         catch (Exception ex)
@@ -326,4 +379,5 @@ public class DevicesController : ControllerBase
             return Results.BadRequest($"Delete failed: {ex.Message}");
         }
     }
+
 }
