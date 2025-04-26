@@ -53,15 +53,16 @@ public class DevicesController : ControllerBase
         try
         {
             Device? device = null;
+            
+            if (!_database.DeviceExists(id))
+                return Results.NotFound($"Device with ID '{id}' not found.");
+            
             if (id.StartsWith("p-", StringComparison.OrdinalIgnoreCase))
                 device = _database.GetPersonalComputerById(id);
             else if (id.StartsWith("ed-", StringComparison.OrdinalIgnoreCase))
                 device = _database.GetEmbeddedDevicesById(id);
             else if (id.StartsWith("sw-", StringComparison.OrdinalIgnoreCase))
                 device = _database.GetSmartwatchById(id);
-
-            if (device == null)
-                Results.NotFound($"Device with ID {id} not found.");
 
             return Results.Ok(device);
         }
@@ -86,7 +87,6 @@ public class DevicesController : ControllerBase
             return Results.Problem($"Unhandled error: {ex.Message}");
         }
     }
-
 
     [HttpPost]
     public async Task<IResult> AddDevice()
@@ -135,15 +135,8 @@ public class DevicesController : ControllerBase
                             if (batteryNode == null)
                                 return Results.BadRequest("Missing 'batteryPercentage' field for smartwatch.");
 
-                            int battery;
-                            try
-                            {
-                                battery = batteryNode.GetValue<int>();
-                            }
-                            catch
-                            {
-                                return Results.BadRequest("'batteryPercentage' must be an integer.");
-                            }
+                            if (!int.TryParse(batteryNode.ToString(), out var battery))
+                                return Results.BadRequest("'batteryPercentage' must be a number.");
 
                             var sw = new Smartwatches(
                                 _database.GenerateNewId("sw"),
@@ -361,10 +354,13 @@ public class DevicesController : ControllerBase
     [HttpDelete("{id}")]
     public IResult DeleteDevice(string id)
     {
-        if(!_database.DeviceExists(id)) return Results.NotFound($"Device with ID {id} not found.");
         try
         {
+            if (!_database.DeviceExists(id))
+                return Results.NotFound($"Device with ID '{id}' not found.");
+
             var success = false;
+
             if (id.StartsWith("p-", StringComparison.OrdinalIgnoreCase))
                 success = _database.DeletePersonalComputer(id);
             else if (id.StartsWith("sw-", StringComparison.OrdinalIgnoreCase))
@@ -372,11 +368,14 @@ public class DevicesController : ControllerBase
             else if (id.StartsWith("ed-", StringComparison.OrdinalIgnoreCase))
                 success = _database.DeleteEmbeddedDevice(id);
 
-            return success ? Results.Ok("Device deleted") : Results.NotFound("Device not found.");
+            if (success)
+                return Results.Ok("Device deleted successfully.");
+            else
+                return Results.BadRequest("Failed to delete device." );
         }
         catch (Exception ex)
         {
-            return Results.BadRequest($"Delete failed: {ex.Message}");
+            return Results.Problem($"Unhandled error during deletion: {ex.Message}");
         }
     }
 
