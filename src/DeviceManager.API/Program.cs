@@ -2,7 +2,7 @@ using DeviceManager.Logic;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("UniversityDatabase");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddTransient<IDatabaseService, DatabaseService>(
     _ => new DatabaseService(connectionString));
 

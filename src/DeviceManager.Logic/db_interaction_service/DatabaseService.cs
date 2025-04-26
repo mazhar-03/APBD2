@@ -13,6 +13,47 @@ public class DatabaseService : IDatabaseService
         _connectionString = connectionString;
     }
 
+    public string GenerateNewId(string deviceType)
+    {
+        var strType = deviceType.ToUpper() switch
+        {
+            "SW" => "SW-",
+            "P" => "P-",
+            "ED" => "ED-",
+            _ => throw new ArgumentException("Not a valid device type.")
+        };
+
+        var maxNumber = 0;
+
+        var sql = "SELECT Id FROM Device WHERE Id LIKE @Prefix";
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Prefix", strType + "%");
+            connection.Open();
+            var reader = command.ExecuteReader();
+            try
+            {
+                while (reader.Read())
+                {
+                    var idString = reader.GetString(0);
+                    var parts = idString.Split('-');
+                    if (parts.Length == 2 && int.TryParse(parts[1], out var num))
+                        if (num > maxNumber)
+                            maxNumber = num;
+                }
+            }
+            finally
+            {
+                reader.Close();
+            }
+        }
+
+        return $"{strType}{maxNumber + 1:D2}";
+    }
+
+
     public IEnumerable<DeviceDto> GetAllDevices()
     {
         var devices = new List<DeviceDto>();

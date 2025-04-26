@@ -53,7 +53,7 @@ public class EmbeddedDevices : Device
         if (!NetworkName.Contains("MD Ltd."))
             throw new ConnectionException("Invalid network name! Must connect to 'MD Ltd.'");
     }
-    
+
     public override void TurnOn()
     {
         Connect();

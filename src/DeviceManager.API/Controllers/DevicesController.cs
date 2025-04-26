@@ -53,10 +53,10 @@ public class DevicesController : ControllerBase
         try
         {
             Device? device = null;
-            
+
             if (!_database.DeviceExists(id))
                 return Results.NotFound($"Device with ID '{id}' not found.");
-            
+
             if (id.StartsWith("p-", StringComparison.OrdinalIgnoreCase))
                 device = _database.GetPersonalComputerById(id);
             else if (id.StartsWith("ed-", StringComparison.OrdinalIgnoreCase))
@@ -108,13 +108,14 @@ public class DevicesController : ControllerBase
                         return Results.BadRequest("Empty or invalid JSON.");
 
                     var deviceType = json["deviceType"]?.ToString()?.ToLower();
-                    var name = json["name"]?.ToString();
-                    var isOnNode = json["isOn"];
-
                     if (string.IsNullOrWhiteSpace(deviceType))
                         return Results.BadRequest("Missing 'deviceType'.");
+
+                    var name = json["name"]?.ToString();
                     if (string.IsNullOrWhiteSpace(name))
                         return Results.BadRequest("Missing 'name'.");
+
+                    var isOnNode = json["isOn"];
                     if (isOnNode == null)
                         return Results.BadRequest("Missing 'isOn' field.");
 
@@ -131,24 +132,50 @@ public class DevicesController : ControllerBase
                     switch (deviceType)
                     {
                         case "sw":
+                        {
                             var batteryNode = json["batteryPercentage"];
                             if (batteryNode == null)
                                 return Results.BadRequest("Missing 'batteryPercentage' field for smartwatch.");
 
-                            if (!int.TryParse(batteryNode.ToString(), out var battery))
-                                return Results.BadRequest("'batteryPercentage' must be a number.");
+                            int battery;
+                            try
+                            {
+                                battery = batteryNode.GetValue<int>();
+                            }
+                            catch
+                            {
+                                return Results.BadRequest("Invalid 'batteryPercentage'. Must be an integer.");
+                            }
 
                             var sw = new Smartwatches(
                                 _database.GenerateNewId("sw"),
                                 name,
-                                isOn,
+                                false, // Always create OFF first
                                 battery
                             );
-                            if (sw.IsOn) sw.TurnOn();
-                            if (_database.AddSmartwatch(sw)) return Results.Created();
+
+                            if (isOn)
+                                try
+                                {
+                                    sw.TurnOn();
+                                }
+                                catch (EmptyBatteryException ex)
+                                {
+                                    return Results.BadRequest($"Battery error: {ex.Message}");
+                                }
+                                catch (InvalidOperationException ex)
+                                {
+                                    return Results.BadRequest($"TurnOn error: {ex.Message}");
+                                }
+
+                            if (_database.AddSmartwatch(sw))
+                                return Results.Created();
+
                             break;
+                        }
 
                         case "p":
+                        {
                             var os = json["operatingSystem"]?.ToString();
                             if (string.IsNullOrWhiteSpace(os))
                                 return Results.BadRequest("Missing 'operatingSystem' for personal computer.");
@@ -156,14 +183,32 @@ public class DevicesController : ControllerBase
                             var pc = new PersonalComputer(
                                 _database.GenerateNewId("p"),
                                 name,
-                                isOn,
+                                false, // Always create OFF first
                                 os
                             );
-                            if (pc.IsOn) pc.TurnOn();
-                            if (_database.AddPersonalComputer(pc)) return Results.Created();
+
+                            if (isOn)
+                                try
+                                {
+                                    pc.TurnOn();
+                                }
+                                catch (EmptySystemException ex)
+                                {
+                                    return Results.BadRequest($"System error: {ex.Message}");
+                                }
+                                catch (InvalidOperationException ex)
+                                {
+                                    return Results.BadRequest($"TurnOn error: {ex.Message}");
+                                }
+
+                            if (_database.AddPersonalComputer(pc))
+                                return Results.Created();
+
                             break;
+                        }
 
                         case "ed":
+                        {
                             var ip = json["ipName"]?.ToString();
                             var network = json["networkName"]?.ToString();
                             if (string.IsNullOrWhiteSpace(ip) || string.IsNullOrWhiteSpace(network))
@@ -172,13 +217,30 @@ public class DevicesController : ControllerBase
                             var ed = new EmbeddedDevices(
                                 _database.GenerateNewId("ed"),
                                 name,
-                                isOn,
+                                false, // Always create OFF first
                                 ip,
                                 network
                             );
-                            if (ed.IsOn) ed.TurnOn();
-                            if (_database.AddEmbeddedDevice(ed)) return Results.Created();
+
+                            if (isOn)
+                                try
+                                {
+                                    ed.TurnOn();
+                                }
+                                catch (ConnectionException ex)
+                                {
+                                    return Results.BadRequest($"Connection error: {ex.Message}");
+                                }
+                                catch (InvalidOperationException ex)
+                                {
+                                    return Results.BadRequest($"TurnOn error: {ex.Message}");
+                                }
+
+                            if (_database.AddEmbeddedDevice(ed))
+                                return Results.Created();
+
                             break;
+                        }
 
                         default:
                             return Results.BadRequest("Unsupported deviceType.");
@@ -186,170 +248,304 @@ public class DevicesController : ControllerBase
 
                     return Results.BadRequest("Device creation failed.");
                 }
-
                 case "text/plain":
                 {
-                    using var reader = new StreamReader(request.Body);
+                    using var reader = new StreamReader(Request.Body);
                     var line = await reader.ReadToEndAsync();
                     var parts = line.Split(',');
 
                     if (parts.Length < 4)
-                        return Results.BadRequest("Invalid plain text format. Expected: ID,Name,IsOn,...");
+                        return Results.BadRequest("Invalid plain text format. Expected: Type-ID, Name,IsOn,...");
 
-                    var id = parts[0];
-                    var type = id.Split('-')[0].ToLower();
+                    var typeId = parts[0];
+                    var typePrefix = typeId.Split('-')[0].ToLower();
 
-                    switch (type)
+                    var name = parts[1];
+                    var isOnStr = parts[2];
+
+                    if (string.IsNullOrWhiteSpace(name))
+                        return Results.BadRequest("Missing 'name' field.");
+
+                    bool isOn;
+                    try
                     {
-                        case "sw":
-                            var sw = new Smartwatches(
-                                id,
-                                parts[1],
-                                bool.Parse(parts[2]),
-                                int.Parse(parts[3].Replace("%", ""))
-                            );
-                            if (sw.IsOn) sw.TurnOn();
-                            if (_database.AddSmartwatch(sw)) return Results.Created();
-                            break;
+                        isOn = bool.Parse(isOnStr);
+                    }
+                    catch
+                    {
+                        return Results.BadRequest("'isOn' must be true or false.");
+                    }
 
-                        case "p":
-                            var pc = new PersonalComputer(
-                                id,
-                                parts[1],
-                                bool.Parse(parts[2]),
-                                parts[3]
-                            );
-                            if (pc.IsOn) pc.TurnOn();
-                            if (_database.AddPersonalComputer(pc)) return Results.Created();
-                            break;
+                    string newId;
+                    try
+                    {
+                        switch (typePrefix.ToLower())
+                        {
+                            case "sw":
+                                newId = _database.GenerateNewId("sw");
+                                var batteryField = parts[3].Trim();
+                                if (!batteryField.EndsWith("%"))
+                                    return Results.BadRequest("Invalid 'batteryPercentage'. Must end with '%'.");
 
-                        case "ed":
-                            if (parts.Length < 5)
-                                return Results.BadRequest(
-                                    "Embedded devices require 5 fields: ID,Name,IsOn,IpName,NetworkName");
+                                int battery;
+                                try
+                                {
+                                    battery = int.Parse(batteryField.Replace("%", ""));
+                                }
+                                catch
+                                {
+                                    return Results.BadRequest("'batteryPercentage' must be a number ending with '%'.");
+                                }
 
-                            var ed = new EmbeddedDevices(
-                                id,
-                                parts[1],
-                                bool.Parse(parts[2]),
-                                parts[3],
-                                parts[4]
-                            );
-                            if (ed.IsOn) ed.TurnOn();
-                            if (_database.AddEmbeddedDevice(ed)) return Results.Created();
-                            break;
+                                var sw = new Smartwatches(newId, name, false, battery);
+                                if (isOn)
+                                    try
+                                    {
+                                        sw.TurnOn();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        return Results.BadRequest(ex.Message);
+                                    }
 
-                        default:
-                            return Results.BadRequest("Unsupported device type in plain text import.");
+                                if (_database.AddSmartwatch(sw))
+                                    return Results.Created();
+                                break;
+                            case "p":
+                                newId = _database.GenerateNewId("p");
+
+                                var os = parts[3].Trim();
+                                var pc = new PersonalComputer(newId, name, isOn, os);
+                                if (isOn)
+                                    try
+                                    {
+                                        pc.TurnOn();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        return Results.BadRequest(ex.Message);
+                                    }
+
+                                if (_database.AddPersonalComputer(pc))
+                                    return Results.Created();
+
+                                break;
+                            case "ed":
+                                newId = _database.GenerateNewId("ed");
+                                if (parts.Length < 5)
+                                    return Results.BadRequest(
+                                        "Embedded devices require 5 fields: ID,Name,IsOn,IpAddress,NetworkName");
+
+                                var ip = parts[3].Trim();
+                                var network = parts[4].Trim();
+
+                                var ed = new EmbeddedDevices(newId, name, false, ip, network);
+
+                                if (isOn)
+                                    try
+                                    {
+                                        ed.TurnOn();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        return Results.BadRequest(ex.Message);
+                                    }
+
+                                if (_database.AddEmbeddedDevice(ed))
+                                    return Results.Created();
+
+                                break;
+                            default:
+                                return Results.BadRequest("Not supported deviceType.");
+                        }
+                    }
+
+                    catch (EmptyBatteryException ex)
+                    {
+                        return Results.BadRequest($"Battery error: {ex.Message}");
+                    }
+                    catch (EmptySystemException ex)
+                    {
+                        return Results.BadRequest($"System error: {ex.Message}");
+                    }
+                    catch (ConnectionException ex)
+                    {
+                        return Results.BadRequest($"Connection error: {ex.Message}");
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        return Results.BadRequest($"Argument error: {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        return Results.Problem($"Unhandled error: {ex.Message}");
                     }
 
                     return Results.BadRequest("Device creation from plain text failed.");
                 }
-
                 default:
                     return Results.BadRequest("Unsupported Content-Type. Use application/json or text/plain.");
             }
         }
-        catch (EmptyBatteryException ex)
-        {
-            return Results.BadRequest($"Battery error: {ex.Message}");
-        }
-        catch (EmptySystemException ex)
-        {
-            return Results.BadRequest($"System error: {ex.Message}");
-        }
-        catch (ConnectionException ex)
-        {
-            return Results.BadRequest($"Connection error: {ex.Message}");
-        }
-        catch (ArgumentException ex)
-        {
-            return Results.BadRequest($"Argument error: {ex.Message}");
-        }
         catch (Exception ex)
         {
             return Results.Problem($"Unhandled error: {ex.Message}");
         }
     }
 
-
-    [HttpPut("{id}")]
-    public async Task<IResult> UpdateDevice(string id)
+[HttpPut("{id}")]
+public async Task<IResult> UpdateDevice(string id)
+{
+    try
     {
+        if (!_database.DeviceExists(id))
+            return Results.NotFound($"Device with ID '{id}' not found.");
+
+        using var reader = new StreamReader(Request.Body);
+        var rawJson = await reader.ReadToEndAsync();
+
+        var json = JsonNode.Parse(rawJson);
+        if (json == null)
+            return Results.BadRequest("Invalid or empty JSON.");
+
+        var type = id.Split('-')[0].ToLower();
+
+        var name = json["name"]?.ToString();
+        var isOnNode = json["isOn"];
+
+        if (string.IsNullOrWhiteSpace(name))
+            return Results.BadRequest("Missing 'name' field.");
+        if (isOnNode == null)
+            return Results.BadRequest("Missing 'isOn' field.");
+
+        bool newIsOn;
         try
         {
-            using var reader = new StreamReader(Request.Body);
-            var rawJson = await reader.ReadToEndAsync();
+            newIsOn = isOnNode.GetValue<bool>();
+        }
+        catch
+        {
+            return Results.BadRequest("'isOn' must be true or false.");
+        }
 
-            var json = JsonNode.Parse(rawJson);
-            if (json != null)
-            {
-                json["id"] = id;
-
-                var type = id.Split('-')[0].ToLower();
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
-                switch (type)
+        switch (type)
+        {
+            case "sw":
                 {
-                    case "sw":
-                        var sw = JsonSerializer.Deserialize<Smartwatches>(json.ToJsonString(), options);
-                        if (sw != null)
-                        {
-                            sw.Id = id;
-                            if (sw.IsOn) sw.TurnOn(); // for triggering emptyBatteryEx
-                            if (_database.UpdateSmartwatch(id, sw)) return Results.Ok("Smartwatch updated.");
-                        }
+                    var batteryNode = json["batteryPercentage"];
+                    if (batteryNode == null)
+                        return Results.BadRequest("Missing 'batteryPercentage' field.");
 
-                        break;
-                    case "p":
-                        var pc = JsonSerializer.Deserialize<PersonalComputer>(json.ToJsonString(), options);
-                        if (pc != null)
-                        {
-                            pc.Id = id;
-                            if (pc.IsOn) pc.TurnOn(); // for triggering emptySystemEx
-                            if (_database.UpdatePersonalComputer(id, pc)) return Results.Ok("PC updated.");
-                        }
+                    int battery;
+                    try
+                    {
+                        battery = batteryNode.GetValue<int>();
+                    }
+                    catch
+                    {
+                        return Results.BadRequest("'batteryPercentage' must be an integer.");
+                    }
 
-                        break;
-                    case "ed":
-                        var ed = JsonSerializer.Deserialize<EmbeddedDevices>(json.ToJsonString(), options);
-                        if (ed != null)
-                        {
-                            ed.Id = id;
-                            if (ed.IsOn) ed.TurnOn(); // for triggering ConnectionException 
-                            if (_database.UpdateEmbeddedDevice(id, ed)) return Results.Ok("Embedded device updated.");
-                        }
+                    var oldSw = _database.GetSmartwatchById(id);
+                    if (oldSw == null)
+                        return Results.NotFound($"Smartwatch with ID '{id}' not found.");
 
-                        break;
+                    var sw = new Smartwatches(id, name, oldSw.IsOn, battery);
 
-                    default:
-                        return Results.BadRequest("Unsupported device type.");
+                    if (!oldSw.IsOn && newIsOn)
+                    {
+                        sw.TurnOn();
+                    }
+                    else
+                    {
+                        sw.IsOn = newIsOn;
+                    }
+
+                    if (_database.UpdateSmartwatch(id, sw))
+                        return Results.Ok("Smartwatch updated.");
+                    break;
                 }
-            }
 
-            return Results.BadRequest("Failed to update device.");
+            case "p":
+                {
+                    var os = json["operatingSystem"]?.ToString();
+                    
+                    var oldPc = _database.GetPersonalComputerById(id);
+                    if (oldPc == null)
+                        return Results.NotFound($"Personal Computer with ID '{id}' not found.");
+
+                    var pc = new PersonalComputer(id, name, oldPc.IsOn, os);
+
+                    if (!oldPc.IsOn && newIsOn)
+                    {
+                        pc.TurnOn();
+                    }
+                    else
+                    {
+                        pc.IsOn = newIsOn;
+                    }
+
+                    if (_database.UpdatePersonalComputer(id, pc))
+                        return Results.Ok("Personal Computer updated.");
+                    break;
+                }
+
+            case "ed":
+                {
+                    var ip = json["ipName"]?.ToString();
+                    var network = json["networkName"]?.ToString();
+
+                    if (string.IsNullOrWhiteSpace(ip) || string.IsNullOrWhiteSpace(network))
+                        return Results.BadRequest("Missing 'ipName' or 'networkName' fields.");
+
+                    var oldEd = _database.GetEmbeddedDevicesById(id);
+                    if (oldEd == null)
+                        return Results.NotFound($"Embedded Device with ID '{id}' not found.");
+
+                    var ed = new EmbeddedDevices(id, name, oldEd.IsOn, ip, network);
+
+                    if (!oldEd.IsOn && newIsOn)
+                    {
+                        ed.TurnOn();
+                    }
+                    else
+                    {
+                        ed.IsOn = newIsOn;
+                    }
+
+                    if (_database.UpdateEmbeddedDevice(id, ed))
+                        return Results.Ok("Embedded Device updated.");
+                    break;
+                }
+
+            default:
+                return Results.BadRequest("Unsupported device type.");
         }
-        catch (EmptyBatteryException ex)
-        {
-            return Results.BadRequest($"Battery error: {ex.Message}");
-        }
-        catch (EmptySystemException ex)
-        {
-            return Results.BadRequest($"System error: {ex.Message}");
-        }
-        catch (ConnectionException ex)
-        {
-            return Results.BadRequest($"Connection error: {ex.Message}");
-        }
-        catch (ArgumentException ex)
-        {
-            return Results.BadRequest($"Argument error: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem($"Unhandled error: {ex.Message}");
-        }
+
+        return Results.BadRequest("Device update failed.");
     }
+    catch (EmptyBatteryException ex)
+    {
+        return Results.BadRequest($"Battery error: {ex.Message}");
+    }
+    catch (EmptySystemException ex)
+    {
+        return Results.BadRequest($"System error: {ex.Message}");
+    }
+    catch (ConnectionException ex)
+    {
+        return Results.BadRequest($"Connection error: {ex.Message}");
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest($"Argument error: {ex.Message}");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Unhandled error: {ex.Message}");
+    }
+}
+
 
     [HttpDelete("{id}")]
     public IResult DeleteDevice(string id)
@@ -370,13 +566,11 @@ public class DevicesController : ControllerBase
 
             if (success)
                 return Results.Ok("Device deleted successfully.");
-            else
-                return Results.BadRequest("Failed to delete device." );
+            return Results.BadRequest("Failed to delete device.");
         }
         catch (Exception ex)
         {
             return Results.Problem($"Unhandled error during deletion: {ex.Message}");
         }
     }
-
 }
