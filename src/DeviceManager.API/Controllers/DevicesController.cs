@@ -1,7 +1,5 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using DeviceManager.Entities;
-using DeviceManager.Logic;
 using DeviceManager.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -394,44 +392,44 @@ public class DevicesController : ControllerBase
         }
     }
 
-[HttpPut("{id}")]
-public async Task<IResult> UpdateDevice(string id)
-{
-    try
+    [HttpPut("{id}")]
+    public async Task<IResult> UpdateDevice(string id)
     {
-        if (!_database.DeviceExists(id))
-            return Results.NotFound($"Device with ID '{id}' not found.");
-
-        using var reader = new StreamReader(Request.Body);
-        var rawJson = await reader.ReadToEndAsync();
-
-        var json = JsonNode.Parse(rawJson);
-        if (json == null)
-            return Results.BadRequest("Invalid or empty JSON.");
-
-        var type = id.Split('-')[0].ToLower();
-
-        var name = json["name"]?.ToString();
-        var isOnNode = json["isOn"];
-
-        if (string.IsNullOrWhiteSpace(name))
-            return Results.BadRequest("Missing 'name' field.");
-        if (isOnNode == null)
-            return Results.BadRequest("Missing 'isOn' field.");
-
-        bool newIsOn;
         try
         {
-            newIsOn = isOnNode.GetValue<bool>();
-        }
-        catch
-        {
-            return Results.BadRequest("'isOn' must be true or false.");
-        }
+            if (!_database.DeviceExists(id))
+                return Results.NotFound($"Device with ID '{id}' not found.");
 
-        switch (type)
-        {
-            case "sw":
+            using var reader = new StreamReader(Request.Body);
+            var rawJson = await reader.ReadToEndAsync();
+
+            var json = JsonNode.Parse(rawJson);
+            if (json == null)
+                return Results.BadRequest("Invalid or empty JSON.");
+
+            var type = id.Split('-')[0].ToLower();
+
+            var name = json["name"]?.ToString();
+            var isOnNode = json["isOn"];
+
+            if (string.IsNullOrWhiteSpace(name))
+                return Results.BadRequest("Missing 'name' field.");
+            if (isOnNode == null)
+                return Results.BadRequest("Missing 'isOn' field.");
+
+            bool newIsOn;
+            try
+            {
+                newIsOn = isOnNode.GetValue<bool>();
+            }
+            catch
+            {
+                return Results.BadRequest("'isOn' must be true or false.");
+            }
+
+            switch (type)
+            {
+                case "sw":
                 {
                     var batteryNode = json["batteryPercentage"];
                     if (batteryNode == null)
@@ -454,23 +452,19 @@ public async Task<IResult> UpdateDevice(string id)
                     var sw = new Smartwatches(id, name, oldSw.IsOn, battery);
 
                     if (!oldSw.IsOn && newIsOn)
-                    {
                         sw.TurnOn();
-                    }
                     else
-                    {
                         sw.IsOn = newIsOn;
-                    }
 
                     if (_database.UpdateSmartwatch(id, sw))
                         return Results.Ok("Smartwatch updated.");
                     break;
                 }
 
-            case "p":
+                case "p":
                 {
                     var os = json["operatingSystem"]?.ToString();
-                    
+
                     var oldPc = _database.GetPersonalComputerById(id);
                     if (oldPc == null)
                         return Results.NotFound($"Personal Computer with ID '{id}' not found.");
@@ -478,20 +472,16 @@ public async Task<IResult> UpdateDevice(string id)
                     var pc = new PersonalComputer(id, name, oldPc.IsOn, os);
 
                     if (!oldPc.IsOn && newIsOn)
-                    {
                         pc.TurnOn();
-                    }
                     else
-                    {
                         pc.IsOn = newIsOn;
-                    }
 
                     if (_database.UpdatePersonalComputer(id, pc))
                         return Results.Ok("Personal Computer updated.");
                     break;
                 }
 
-            case "ed":
+                case "ed":
                 {
                     var ip = json["ipName"]?.ToString();
                     var network = json["networkName"]?.ToString();
@@ -506,46 +496,42 @@ public async Task<IResult> UpdateDevice(string id)
                     var ed = new EmbeddedDevices(id, name, oldEd.IsOn, ip, network);
 
                     if (!oldEd.IsOn && newIsOn)
-                    {
                         ed.TurnOn();
-                    }
                     else
-                    {
                         ed.IsOn = newIsOn;
-                    }
 
                     if (_database.UpdateEmbeddedDevice(id, ed))
                         return Results.Ok("Embedded Device updated.");
                     break;
                 }
 
-            default:
-                return Results.BadRequest("Unsupported device type.");
-        }
+                default:
+                    return Results.BadRequest("Unsupported device type.");
+            }
 
-        return Results.BadRequest("Device update failed.");
+            return Results.BadRequest("Device update failed.");
+        }
+        catch (EmptyBatteryException ex)
+        {
+            return Results.BadRequest($"Battery error: {ex.Message}");
+        }
+        catch (EmptySystemException ex)
+        {
+            return Results.BadRequest($"System error: {ex.Message}");
+        }
+        catch (ConnectionException ex)
+        {
+            return Results.BadRequest($"Connection error: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest($"Argument error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Unhandled error: {ex.Message}");
+        }
     }
-    catch (EmptyBatteryException ex)
-    {
-        return Results.BadRequest($"Battery error: {ex.Message}");
-    }
-    catch (EmptySystemException ex)
-    {
-        return Results.BadRequest($"System error: {ex.Message}");
-    }
-    catch (ConnectionException ex)
-    {
-        return Results.BadRequest($"Connection error: {ex.Message}");
-    }
-    catch (ArgumentException ex)
-    {
-        return Results.BadRequest($"Argument error: {ex.Message}");
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem($"Unhandled error: {ex.Message}");
-    }
-}
 
 
     [HttpDelete("{id}")]

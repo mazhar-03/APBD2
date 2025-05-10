@@ -1,5 +1,4 @@
 using DeviceManager.Repositories;
-using IDeviceRepository = DeviceManager.Logic.IDeviceRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 

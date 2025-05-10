@@ -29,9 +29,9 @@ public class PersonalComputer : Device
     /// <exception cref="EmptySystemException">Thrown if no OS is set.</exception>
     public override void TurnOn()
     {
-        if (string.IsNullOrWhiteSpace(this.OperatingSystem))
+        if (string.IsNullOrWhiteSpace(OperatingSystem))
             throw new EmptySystemException("PC cannot be launched without an operating system.");
-        this.IsOn = true;
+        IsOn = true;
     }
 
     /// <summary>
