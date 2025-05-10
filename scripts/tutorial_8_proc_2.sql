@@ -1,27 +1,25 @@
-CREATE PROCEDURE AddSmartwatch
-    @DeviceId VARCHAR(50),
-    @Name NVARCHAR(100),
-    @IsEnabled BIT,
-    @BatteryPercentage INT
-AS
+ALTER PROCEDURE AddSmartwatch
+    @SwId               INT,
+    @DeviceId           VARCHAR(50),
+    @Name               NVARCHAR(100),
+    @IsEnabled          BIT,
+    @BatteryPercentage  INT
+    AS
 BEGIN
     SET NOCOUNT ON;
+BEGIN TRY
+BEGIN TRANSACTION;
 
-    BEGIN TRY
-        BEGIN TRANSACTION;
+INSERT INTO Device       (Id, Name,  IsEnabled)
+VALUES                   (@DeviceId, @Name, @IsEnabled);
 
-        -- Insert into Device table
-        INSERT INTO Device (Id, Name, IsEnabled)
-        VALUES (@DeviceId, @Name, @IsEnabled);
+INSERT INTO Smartwatch   (Id, BatteryPercentage, DeviceId)
+VALUES                   (@SwId, @BatteryPercentage, @DeviceId);
 
-        -- Insert into Smartwatch table
-        INSERT INTO Smartwatch (BatteryPercentage, DeviceId)
-        VALUES (@BatteryPercentage, @DeviceId);
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        ROLLBACK TRANSACTION;
+COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+ROLLBACK TRANSACTION;
         THROW;
-    END CATCH
+END CATCH
 END
