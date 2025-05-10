@@ -23,7 +23,7 @@ public interface IDeviceDBRepository
 
     // Embedded Device
     EmbeddedDevices GetEmbeddedDevicesById(string id);
-    bool AddEmbeddedDevice(EmbeddedDevices device);
+    bool AddEmbedded(EmbeddedDevices device);
     bool UpdateEmbeddedDevice(string id, EmbeddedDevices device);
     bool DeleteEmbeddedDevice(string id);
     string GenerateNewId(string deviceType);

@@ -1,4 +1,5 @@
-﻿using DeviceManager.Entities;
+﻿using System.Data;
+using DeviceManager.Entities;
 using DeviceManager.Entities.DTO;
 using Microsoft.Data.SqlClient;
 
@@ -121,42 +122,39 @@ public class DeviceDbRepository : IDeviceDBRepository
         return smartwatch;
     }
 
+    private int GetNextSmartwatchId()
+    {
+        const string sql = "SELECT ISNULL(MAX(Id), 0) FROM Smartwatch";
+
+        using var conn = new SqlConnection(_connectionString);
+        using var cmd  = new SqlCommand(sql, conn);
+        conn.Open();
+        var result = cmd.ExecuteScalar();
+        var maxId  = Convert.ToInt32(result);
+        return maxId + 1;
+    }
+
     public bool AddSmartwatch(Smartwatches device)
     {
-        var insertDevice = "INSERT INTO Device (Id, Name, IsEnabled) VALUES (@Id, @Name, @IsEnabled)";
-        var insertSw =
-            "INSERT INTO Smartwatch (Id, BatteryPercentage, DeviceId) VALUES (@SwId, @BatteryPercentage, @DeviceId)";
+        var swId = GetNextSmartwatchId();
 
-        using (var connection = new SqlConnection(_connectionString))
+        using var connection = new SqlConnection(_connectionString);
+        using var cmd        = new SqlCommand("AddSmartwatch", connection)
         {
-            connection.Open();
-            var transaction = connection.BeginTransaction();
+            CommandType = CommandType.StoredProcedure
+        };
 
-            try
-            {
-                var deviceCommand = new SqlCommand(insertDevice, connection, transaction);
-                deviceCommand.Parameters.AddWithValue("@Id", device.Id);
-                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
-                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
-                deviceCommand.ExecuteNonQuery();
+        cmd.Parameters.AddWithValue("@SwId",              swId);
+        cmd.Parameters.AddWithValue("@DeviceId",          device.Id);
+        cmd.Parameters.AddWithValue("@Name",              device.Name);
+        cmd.Parameters.AddWithValue("@IsEnabled",         device.IsOn);
+        cmd.Parameters.AddWithValue("@BatteryPercentage", device.BatteryPercentage);
 
-                var swCommand = new SqlCommand(insertSw, connection, transaction);
-                var swId = GetIntId(device);
-                swCommand.Parameters.AddWithValue("@SwId", swId);
-                swCommand.Parameters.AddWithValue("@BatteryPercentage", device.BatteryPercentage);
-                swCommand.Parameters.AddWithValue("@DeviceId", device.Id);
-                swCommand.ExecuteNonQuery();
-
-                transaction.Commit();
-                return true;
-            }
-            catch
-            {
-                transaction.Rollback();
-                return false;
-            }
-        }
+        connection.Open();
+        cmd.ExecuteNonQuery();
+        return true;
     }
+
 
     public bool UpdateSmartwatch(string id, Smartwatches device)
     {
@@ -253,42 +251,40 @@ public class DeviceDbRepository : IDeviceDBRepository
 
         return pc;
     }
+    
+    private int GetNextPersonalComputerId()
+    {
+        const string sql = "SELECT ISNULL(MAX(Id), 0) FROM PersonalComputer";
+
+        using var conn = new SqlConnection(_connectionString);
+        using var cmd  = new SqlCommand(sql, conn);
+        conn.Open();
+        var result = cmd.ExecuteScalar();
+        var maxId  = Convert.ToInt32(result);
+        return maxId + 1;
+    }
 
     public bool AddPersonalComputer(PersonalComputer device)
     {
-        var insertDevice = "INSERT INTO Device (Id, Name, IsEnabled) VALUES (@Id, @Name, @IsEnabled)";
-        var insertPC =
-            "INSERT INTO PersonalComputer (Id, OperationSystem, DeviceId) VALUES (@PcId, @OperationSystem, @DeviceId)";
+        var pcId = GetNextPersonalComputerId();
 
-        using (var connection = new SqlConnection(_connectionString))
+        using var connection = new SqlConnection(_connectionString);
+        using var cmd        = new SqlCommand("AddPersonalComputer", connection)
         {
-            connection.Open();
-            var transaction = connection.BeginTransaction();
-            try
-            {
-                var deviceCommand = new SqlCommand(insertDevice, connection, transaction);
-                deviceCommand.Parameters.AddWithValue("@Id", device.Id);
-                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
-                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
-                deviceCommand.ExecuteNonQuery();
+            CommandType = CommandType.StoredProcedure
+        };
 
-                var pcCommand = new SqlCommand(insertPC, connection, transaction);
-                var pcId = GetIntId(device);
-                pcCommand.Parameters.AddWithValue("@PcId", pcId);
-                pcCommand.Parameters.AddWithValue("@OperationSystem", device.OperatingSystem ?? (object)DBNull.Value);
-                pcCommand.Parameters.AddWithValue("@DeviceId", device.Id);
-                pcCommand.ExecuteNonQuery();
+        cmd.Parameters.AddWithValue("@PcId",            pcId);
+        cmd.Parameters.AddWithValue("@DeviceId",        device.Id);
+        cmd.Parameters.AddWithValue("@Name",            device.Name);
+        cmd.Parameters.AddWithValue("@IsEnabled",       device.IsOn);
+        cmd.Parameters.AddWithValue("@OperationSystem", device.OperatingSystem);
 
-                transaction.Commit();
-                return true;
-            }
-            catch
-            {
-                transaction.Rollback();
-                return false;
-            }
-        }
+        connection.Open();
+        cmd.ExecuteNonQuery();
+        return true;
     }
+
 
     public bool UpdatePersonalComputer(string id, PersonalComputer device)
     {
@@ -385,43 +381,40 @@ public class DeviceDbRepository : IDeviceDBRepository
         return ed;
     }
 
-    public bool AddEmbeddedDevice(EmbeddedDevices device)
+    private int GetNextEmbeddedId()
     {
-        var insertDevice = "INSERT INTO Device (Id, Name, IsEnabled) VALUES (@Id, @Name, @IsEnabled)";
-        var insertED =
-            "INSERT INTO Embedded (Id, IpAddress, NetworkName, DeviceId) VALUES (@EdId, @Ip, @Network, @DeviceId)";
+        const string sql = "SELECT ISNULL(MAX(Id), 0) FROM Embedded";
 
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            connection.Open();
-            var transaction = connection.BeginTransaction();
-            try
-            {
-                var deviceCommand = new SqlCommand(insertDevice, connection, transaction);
-                deviceCommand.Parameters.AddWithValue("@Id", device.Id);
-                deviceCommand.Parameters.AddWithValue("@Name", device.Name);
-                deviceCommand.Parameters.AddWithValue("@IsEnabled", device.IsOn);
-                deviceCommand.ExecuteNonQuery();
-
-                var edId = GetIntId(device);
-
-                var edCommand = new SqlCommand(insertED, connection, transaction);
-                edCommand.Parameters.AddWithValue("@EdId", edId);
-                edCommand.Parameters.AddWithValue("@Ip", device.IpName);
-                edCommand.Parameters.AddWithValue("@Network", device.NetworkName);
-                edCommand.Parameters.AddWithValue("@DeviceId", device.Id);
-                edCommand.ExecuteNonQuery();
-
-                transaction.Commit();
-                return true;
-            }
-            catch
-            {
-                transaction.Rollback();
-                return false;
-            }
-        }
+        using var conn = new SqlConnection(_connectionString);
+        using var cmd  = new SqlCommand(sql, conn);
+        conn.Open();
+        var result = cmd.ExecuteScalar();
+        var maxId  = Convert.ToInt32(result);
+        return maxId + 1;
     }
+    
+    public bool AddEmbedded(EmbeddedDevices device)
+    {
+        var edId = GetNextEmbeddedId();
+
+        using var connection = new SqlConnection(_connectionString);
+        using var cmd        = new SqlCommand("AddEmbedded", connection)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+
+        cmd.Parameters.AddWithValue("@EdId",         edId);
+        cmd.Parameters.AddWithValue("@DeviceId",     device.Id);
+        cmd.Parameters.AddWithValue("@Name",         device.Name);
+        cmd.Parameters.AddWithValue("@IsEnabled",    device.IsOn);
+        cmd.Parameters.AddWithValue("@IpAddress",    device.IpName);
+        cmd.Parameters.AddWithValue("@NetworkName",  device.NetworkName);
+
+        connection.Open();
+        cmd.ExecuteNonQuery();
+        return true;
+    }
+
 
     public bool UpdateEmbeddedDevice(string id, EmbeddedDevices device)
     {

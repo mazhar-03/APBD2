@@ -237,7 +237,7 @@ public class DevicesController : ControllerBase
                                     return Results.BadRequest($"TurnOn error: {ex.Message}");
                                 }
 
-                            if (_database.AddEmbeddedDevice(ed))
+                            if (_database.AddEmbedded(ed))
                                 return Results.Created();
 
                             break;
@@ -352,7 +352,7 @@ public class DevicesController : ControllerBase
                                         return Results.BadRequest(ex.Message);
                                     }
 
-                                if (_database.AddEmbeddedDevice(ed))
+                                if (_database.AddEmbedded(ed))
                                     return Results.Created();
 
                                 break;
