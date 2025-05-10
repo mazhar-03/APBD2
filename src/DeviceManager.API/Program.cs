@@ -1,10 +1,11 @@
-using DeviceManager.Logic;
+using DeviceManager.Repositories;
+using IDeviceRepository = DeviceManager.Logic.IDeviceRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddTransient<IDatabaseService, DatabaseService>(
-    _ => new DatabaseService(connectionString));
+builder.Services.AddTransient<IDeviceDBRepository, DeviceDbRepository>(
+    _ => new DeviceDbRepository(connectionString));
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

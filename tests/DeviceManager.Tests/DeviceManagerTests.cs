@@ -1,7 +1,7 @@
 ﻿using DeviceManager.Entities;
 using DeviceManager.Logic;
 
-namespace DeviceManagerTests;
+namespace TestProject1;
 
 public class DeviceManagerTests
 {

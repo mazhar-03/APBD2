@@ -2,13 +2,13 @@
 using DeviceManager.Entities.DTO;
 using Microsoft.Data.SqlClient;
 
-namespace DeviceManager.Logic;
+namespace DeviceManager.Repositories;
 
-public class DatabaseService : IDatabaseService
+public class DeviceDbRepository : IDeviceDBRepository
 {
     private readonly string _connectionString;
 
-    public DatabaseService(string connectionString)
+    public DeviceDbRepository(string connectionString)
     {
         _connectionString = connectionString;
     }

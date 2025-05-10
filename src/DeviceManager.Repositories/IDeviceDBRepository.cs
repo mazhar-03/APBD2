@@ -1,9 +1,9 @@
 ﻿using DeviceManager.Entities;
 using DeviceManager.Entities.DTO;
 
-namespace DeviceManager.Logic;
+namespace DeviceManager.Repositories;
 
-public interface IDatabaseService
+public interface IDeviceDBRepository
 {
     //General
     IEnumerable<DeviceDto> GetAllDevices();

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using DeviceManager.Entities;
 using DeviceManager.Logic;
+using DeviceManager.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApplication1.Controllers;
@@ -10,9 +11,9 @@ namespace WebApplication1.Controllers;
 [Route("api/devices")]
 public class DevicesController : ControllerBase
 {
-    private readonly IDatabaseService _database;
+    private readonly IDeviceDBRepository _database;
 
-    public DevicesController(IDatabaseService database)
+    public DevicesController(IDeviceDBRepository database)
     {
         _database = database;
     }

@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.Logic", "src\DeviceManager.Logic\DeviceManager.Logic.csproj", "{E9CF12A7-2ACA-4E1C-AD79-4594DE25CA30}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.Entities", "src\DeviceManager.Entities\DeviceManager.Entities.csproj", "{3E729054-D22D-4874-AF45-9B4FBA1B36D2}"
@@ -10,6 +10,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F02FCBFE-D4EF-46B4-A6F5-4C3321FA5709}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManagerTests", "tests\DeviceManager.Tests\DeviceManagerTests.csproj", "{232F5556-D950-419D-9632-0AEA5E5D112E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceManager.Repositories", "src\DeviceManager.Repositories\DeviceManager.Repositories.csproj", "{81CF82B5-EF74-4E5B-A441-9BCEDFBF12B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,10 @@ Global
 		{232F5556-D950-419D-9632-0AEA5E5D112E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{232F5556-D950-419D-9632-0AEA5E5D112E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{232F5556-D950-419D-9632-0AEA5E5D112E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81CF82B5-EF74-4E5B-A441-9BCEDFBF12B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81CF82B5-EF74-4E5B-A441-9BCEDFBF12B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81CF82B5-EF74-4E5B-A441-9BCEDFBF12B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81CF82B5-EF74-4E5B-A441-9BCEDFBF12B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{232F5556-D950-419D-9632-0AEA5E5D112E} = {F02FCBFE-D4EF-46B4-A6F5-4C3321FA5709}

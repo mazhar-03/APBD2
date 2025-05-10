@@ -22,6 +22,7 @@
         <ProjectReference Include="..\DeviceManager.Entities\DeviceManager.Entities.csproj"/>
         <ProjectReference Include="..\DeviceManager.Logic\DeviceManager.Logic.csproj"/>
         <ProjectReference Include="..\..\tests\DeviceManager.Tests\DeviceManagerTests.csproj"/>
+        <ProjectReference Include="..\DeviceManager.Repositories\DeviceManager.Repositories.csproj" />
     </ItemGroup>
 
 </Project>
