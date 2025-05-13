@@ -10,21 +10,21 @@ public interface IDeviceDBRepository
     bool DeviceExists(string id);
 
     // Smartwatches
-    Smartwatches GetSmartwatchById(string id);
+    SmartwatchDto? GetSmartwatchById(string id);
     bool AddSmartwatch(Smartwatches device);
-    bool UpdateSmartwatch(string id, Smartwatches device);
+    bool UpdateSmartwatch(string id, SmartwatchDto device);
     bool DeleteSmartwatch(string id);
 
     // Personal Computer
-    PersonalComputer GetPersonalComputerById(string id);
+    PersonalComputerDto? GetPersonalComputerById(string id);
     bool AddPersonalComputer(PersonalComputer device);
-    bool UpdatePersonalComputer(string id, PersonalComputer device);
+    bool UpdatePersonalComputer(string id, PersonalComputerDto device);
     bool DeletePersonalComputer(string id);
 
     // Embedded Device
-    EmbeddedDevices GetEmbeddedDevicesById(string id);
+    EmbeddedDto? GetEmbeddedDevicesById(string id);
     bool AddEmbedded(EmbeddedDevices device);
-    bool UpdateEmbeddedDevice(string id, EmbeddedDevices device);
+    bool UpdateEmbeddedDevice(string id, EmbeddedDto device);
     bool DeleteEmbeddedDevice(string id);
     string GenerateNewId(string deviceType);
 }
