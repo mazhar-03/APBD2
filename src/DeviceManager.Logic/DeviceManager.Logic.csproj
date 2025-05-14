@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\DeviceManager.Entities\DeviceManager.Entities.csproj"/>
+        <ProjectReference Include="..\DeviceManager.Repositories\DeviceManager.Repositories.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -451,7 +451,7 @@ public class DeviceDbRepository : IDeviceDBRepository
                         command.Parameters.AddWithValue("@Id", deviceDto.Id);
                         command.Parameters.AddWithValue("@Name", deviceDto.Name);
                         command.Parameters.AddWithValue("@IsEnabled", deviceDto.IsEnabled);
-                        command.Parameters.AddWithValue("@RowVersion", deviceDto.RowVersion);
+                        command.Parameters.AddWithValue("@RowVersion", SqlDbType.Timestamp).Value = deviceDto.RowVersion;
 
                         var affectedRows = command.ExecuteNonQuery();
 
