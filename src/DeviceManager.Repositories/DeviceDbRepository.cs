@@ -73,6 +73,7 @@ public class DeviceDbRepository : IDeviceDBRepository
 
         return devices;
     }
+
     public DeviceDto? GetDeviceById(string id)
     {
         var querystring = "SELECT * FROM Device WHERE Id = @id";
@@ -125,7 +126,6 @@ public class DeviceDbRepository : IDeviceDBRepository
                 using (var reader = command.ExecuteReader())
                 {
                     if (reader.Read())
-                    {
                         smartwatch = new SmartwatchDto
                         {
                             Id = reader.GetString(0),
@@ -134,14 +134,13 @@ public class DeviceDbRepository : IDeviceDBRepository
                             BatteryLevel = reader.GetInt32(4),
                             RowVersion = reader.GetSqlBinary(3).Value
                         };
-
-                    }
                 }
             }
         }
+
         return smartwatch;
     }
-    
+
     public PersonalComputerDto? GetPersonalComputerById(string id)
     {
         PersonalComputerDto pc = null;
@@ -160,9 +159,8 @@ public class DeviceDbRepository : IDeviceDBRepository
                 using (var reader = command.ExecuteReader())
                 {
                     if (reader.Read())
-                    {
                         // Correctly mapping to the DTO
-                        pc = new PersonalComputerDto()
+                        pc = new PersonalComputerDto
                         {
                             Id = reader.GetString(0),
                             Name = reader.GetString(1),
@@ -170,13 +168,13 @@ public class DeviceDbRepository : IDeviceDBRepository
                             OperatingSystem = reader.GetString(4),
                             RowVersion = reader.GetSqlBinary(3).Value
                         };
-
-                    }
                 }
             }
         }
+
         return pc;
     }
+
     public EmbeddedDto? GetEmbeddedDevicesById(string id)
     {
         EmbeddedDto? edDto = null;
@@ -195,7 +193,6 @@ public class DeviceDbRepository : IDeviceDBRepository
                 using (var reader = command.ExecuteReader())
                 {
                     if (reader.Read())
-                    {
                         edDto = new EmbeddedDto
                         {
                             Id = reader.GetString(0),
@@ -205,14 +202,13 @@ public class DeviceDbRepository : IDeviceDBRepository
                             IpAddress = reader.GetString(4),
                             NetworkName = reader.GetString(5)
                         };
-                    }
                 }
             }
         }
 
         return edDto;
     }
-    
+
     public bool AddSmartwatch(Smartwatches device)
     {
         var swId = GetIntId(device);
@@ -436,7 +432,7 @@ public class DeviceDbRepository : IDeviceDBRepository
             return Convert.ToInt32(command.ExecuteScalar()) > 0;
         }
     }
-    
+
 
     public bool UpdateDevice(DeviceDto deviceDto)
     {
@@ -452,9 +448,9 @@ public class DeviceDbRepository : IDeviceDBRepository
                 {
                     using (var command = new SqlCommand(sqlUpdateDevice, connection, transaction))
                     {
-                        command.Parameters.AddWithValue("@DeviceId", deviceDto.Id);
-                        command.Parameters.AddWithValue("@DeviceName", deviceDto.Name);
-                        command.Parameters.AddWithValue("@IsActive", deviceDto.IsEnabled);
+                        command.Parameters.AddWithValue("@Id", deviceDto.Id);
+                        command.Parameters.AddWithValue("@Name", deviceDto.Name);
+                        command.Parameters.AddWithValue("@IsEnabled", deviceDto.IsEnabled);
                         command.Parameters.AddWithValue("@RowVersion", deviceDto.RowVersion);
 
                         var affectedRows = command.ExecuteNonQuery();

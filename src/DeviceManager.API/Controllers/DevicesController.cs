@@ -22,9 +22,8 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            var devices = _database.GetAllDevices().
-                Select(d => new {d.Id, d.Name, d.IsEnabled});
-            
+            var devices = _database.GetAllDevices().Select(d => new { d.Id, d.Name, d.IsEnabled });
+
             return Results.Ok(devices);
         }
         catch (EmptyBatteryException ex)
@@ -514,7 +513,7 @@ public class DevicesController : ControllerBase
                     break;
                 }
 
-                case "ed": 
+                case "ed":
                 {
                     var ip = json["ipName"]?.ToString();
                     var network = json["networkName"]?.ToString();
