@@ -14,4 +14,5 @@ public interface IDeviceService
     bool UpdateDevice(DeviceDto deviceDto);
     bool DeleteDevice(string id);
     string GenerateNewId(string deviceType);
+    bool DeviceExists(string id);
 }

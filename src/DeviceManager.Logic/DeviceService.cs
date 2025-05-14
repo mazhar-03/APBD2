@@ -48,4 +48,5 @@ public class DeviceService : IDeviceService
         }
 
         public string GenerateNewId(string deviceType) => _repository.GenerateNewId(deviceType);
+        public bool DeviceExists(string id) => _repository.DeviceExists(id);
     }

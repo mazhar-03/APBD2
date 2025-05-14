@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using DeviceManager.Entities;
 using DeviceManager.Entities.DTO;
+using DeviceManager.Logic;
 using DeviceManager.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,11 +11,11 @@ namespace WebApplication1.Controllers;
 [Route("api/devices")]
 public class DevicesController : ControllerBase
 {
-    private readonly IDeviceDBRepository _database;
+    private readonly IDeviceService _service;
 
-    public DevicesController(IDeviceDBRepository database)
+    public DevicesController(IDeviceService service)
     {
-        _database = database;
+        _service = service;
     }
 
     [HttpGet]
@@ -22,7 +23,7 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            var devices = _database.GetAllDevices().Select(d => new { d.Id, d.Name, d.IsEnabled });
+            var devices = _service.GetAllDevices().Select(d => new { d.Id, d.Name, d.IsEnabled });
 
             return Results.Ok(devices);
         }
@@ -55,15 +56,10 @@ public class DevicesController : ControllerBase
         {
             DeviceDto? device = null;
 
-            if (!_database.DeviceExists(id))
+            if (!_service.DeviceExists(id))
                 return Results.NotFound($"Device with ID '{id}' not found.");
 
-            if (id.StartsWith("p-", StringComparison.OrdinalIgnoreCase))
-                device = _database.GetPersonalComputerById(id);
-            else if (id.StartsWith("ed-", StringComparison.OrdinalIgnoreCase))
-                device = _database.GetEmbeddedDevicesById(id);
-            else if (id.StartsWith("sw-", StringComparison.OrdinalIgnoreCase))
-                device = _database.GetSmartwatchById(id);
+            device = _service.GetDeviceById(id);
 
             if (device == null)
                 return Results.NotFound($"Device with ID '{id}' could not be retrieved.");
@@ -152,7 +148,7 @@ public class DevicesController : ControllerBase
                             }
 
                             var sw = new Smartwatches(
-                                _database.GenerateNewId("sw"),
+                                _service.GenerateNewId("sw"),
                                 name,
                                 false, // Always create OFF first
                                 battery
@@ -172,7 +168,7 @@ public class DevicesController : ControllerBase
                                     return Results.BadRequest($"TurnOn error: {ex.Message}");
                                 }
 
-                            if (_database.AddSmartwatch(sw))
+                            if (_service.AddSmartwatch(sw))
                                 return Results.Created();
 
                             break;
@@ -185,7 +181,7 @@ public class DevicesController : ControllerBase
                                 return Results.BadRequest("Missing 'operatingSystem' for personal computer.");
 
                             var pc = new PersonalComputer(
-                                _database.GenerateNewId("p"),
+                                _service.GenerateNewId("p"),
                                 name,
                                 false, // Always create OFF first
                                 os
@@ -205,7 +201,7 @@ public class DevicesController : ControllerBase
                                     return Results.BadRequest($"TurnOn error: {ex.Message}");
                                 }
 
-                            if (_database.AddPersonalComputer(pc))
+                            if (_service.AddPersonalComputer(pc))
                                 return Results.Created();
 
                             break;
@@ -219,7 +215,7 @@ public class DevicesController : ControllerBase
                                 return Results.BadRequest("Missing 'ipName' or 'networkName' for embedded device.");
 
                             var ed = new EmbeddedDevices(
-                                _database.GenerateNewId("ed"),
+                                _service.GenerateNewId("ed"),
                                 name,
                                 false, // Always create OFF first
                                 ip,
@@ -240,7 +236,7 @@ public class DevicesController : ControllerBase
                                     return Results.BadRequest($"TurnOn error: {ex.Message}");
                                 }
 
-                            if (_database.AddEmbedded(ed))
+                            if (_service.AddEmbedded(ed))
                                 return Results.Created();
 
                             break;
@@ -286,7 +282,7 @@ public class DevicesController : ControllerBase
                         switch (typePrefix.ToLower())
                         {
                             case "sw":
-                                newId = _database.GenerateNewId("sw");
+                                newId = _service.GenerateNewId("sw");
                                 var batteryField = parts[3].Trim();
                                 if (!batteryField.EndsWith("%"))
                                     return Results.BadRequest("Invalid 'batteryPercentage'. Must end with '%'.");
@@ -312,11 +308,11 @@ public class DevicesController : ControllerBase
                                         return Results.BadRequest(ex.Message);
                                     }
 
-                                if (_database.AddSmartwatch(sw))
+                                if (_service.AddSmartwatch(sw))
                                     return Results.Created();
                                 break;
                             case "p":
-                                newId = _database.GenerateNewId("p");
+                                newId = _service.GenerateNewId("p");
 
                                 var os = parts[3].Trim();
                                 var pc = new PersonalComputer(newId, name, isOn, os);
@@ -330,12 +326,12 @@ public class DevicesController : ControllerBase
                                         return Results.BadRequest(ex.Message);
                                     }
 
-                                if (_database.AddPersonalComputer(pc))
+                                if (_service.AddPersonalComputer(pc))
                                     return Results.Created();
 
                                 break;
                             case "ed":
-                                newId = _database.GenerateNewId("ed");
+                                newId = _service.GenerateNewId("ed");
                                 if (parts.Length < 5)
                                     return Results.BadRequest(
                                         "Embedded devices require 5 fields: ID,Name,IsOn,IpAddress,NetworkName");
@@ -355,7 +351,7 @@ public class DevicesController : ControllerBase
                                         return Results.BadRequest(ex.Message);
                                     }
 
-                                if (_database.AddEmbedded(ed))
+                                if (_service.AddEmbedded(ed))
                                     return Results.Created();
 
                                 break;
@@ -402,7 +398,7 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            var deviceDto = _database.GetDeviceById(id);
+            var deviceDto = _service.GetDeviceById(id);
             if (deviceDto == null)
                 return Results.NotFound($"Device with ID '{id}' not found.");
 
@@ -473,7 +469,7 @@ public class DevicesController : ControllerBase
                         swDto.BatteryLevel = battery;
                         swDto.IsEnabled = newIsOn;
 
-                        var result = _database.UpdateDevice(swDto);
+                        var result = _service.UpdateDevice(swDto);
                         if (result)
                             return Results.Ok("Smartwatch updated.");
                         return Results.BadRequest("Smartwatch update failed.");
@@ -504,7 +500,7 @@ public class DevicesController : ControllerBase
 
                         pcDto.OperatingSystem = os;
 
-                        var result = _database.UpdateDevice(pcDto);
+                        var result = _service.UpdateDevice(pcDto);
                         if (result)
                             return Results.Ok("Personal Computer updated.");
                         return Results.BadRequest("Personal Computer update failed.");
@@ -539,7 +535,7 @@ public class DevicesController : ControllerBase
                         edDto.IpAddress = ip;
                         edDto.NetworkName = network;
 
-                        var result = _database.UpdateDevice(edDto);
+                        var result = _service.UpdateDevice(edDto);
                         if (result)
                             return Results.Ok("Embedded Device updated.");
                         return Results.BadRequest("Embedded Device update failed.");
@@ -582,17 +578,10 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            if (!_database.DeviceExists(id))
+            if (!_service.DeviceExists(id))
                 return Results.NotFound($"Device with ID '{id}' not found.");
 
-            var success = false;
-
-            if (id.StartsWith("p-", StringComparison.OrdinalIgnoreCase))
-                success = _database.DeletePersonalComputer(id);
-            else if (id.StartsWith("sw-", StringComparison.OrdinalIgnoreCase))
-                success = _database.DeleteSmartwatch(id);
-            else if (id.StartsWith("ed-", StringComparison.OrdinalIgnoreCase))
-                success = _database.DeleteEmbeddedDevice(id);
+            var success = _service.DeleteDevice(id);
 
             if (success)
                 return Results.Ok("Device deleted successfully.");
