@@ -66,13 +66,153 @@ public class DeviceDbRepository : IDeviceDBRepository
                         Id = reader.GetString(0),
                         Name = reader.GetString(1),
                         IsEnabled = reader.GetBoolean(2),
+                        RowVersion = reader.GetSqlBinary(3).Value
                     });
             }
         }
 
         return devices;
     }
+    public DeviceDto? GetDeviceById(string id)
+    {
+        var querystring = "SELECT * FROM Device WHERE Id = @id";
 
+        try
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                var command = new SqlCommand(querystring, connection);
+                command.Parameters.AddWithValue("@Id", id);
+                connection.Open();
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.Read())
+                        return null;
+
+                    return new DeviceDto
+                    {
+                        Id = reader.GetString(0),
+                        Name = reader.GetString(1),
+                        IsEnabled = reader.GetBoolean(2),
+                        RowVersion = reader.GetSqlBinary(3).Value
+                    };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving device: {ex.Message}");
+            return null;
+        }
+    }
+
+    public SmartwatchDto? GetSmartwatchById(string id)
+    {
+        SmartwatchDto smartwatch = null;
+        const string sql = @"
+        SELECT d.Id, d.Name, d.IsEnabled, d.RowVersion, s.BatteryPercentage
+        FROM Device d
+        JOIN Smartwatch s ON d.Id = s.DeviceId
+        WHERE d.Id = @id";
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@id", id);
+                connection.Open();
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        smartwatch = new SmartwatchDto
+                        {
+                            Id = reader.GetString(0),
+                            Name = reader.GetString(1),
+                            IsEnabled = reader.GetBoolean(2),
+                            BatteryLevel = reader.GetInt32(4),
+                            RowVersion = reader.GetSqlBinary(3).Value
+                        };
+
+                    }
+                }
+            }
+        }
+        return smartwatch;
+    }
+    
+    public PersonalComputerDto? GetPersonalComputerById(string id)
+    {
+        PersonalComputerDto pc = null;
+        const string sql = @"
+        SELECT d.Id, d.Name, d.IsEnabled, d.RowVersion, p.OperationSystem
+        FROM Device d
+        JOIN PersonalComputer p ON d.Id = p.DeviceId
+        WHERE d.Id = @id";
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@id", id);
+                connection.Open();
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        // Correctly mapping to the DTO
+                        pc = new PersonalComputerDto()
+                        {
+                            Id = reader.GetString(0),
+                            Name = reader.GetString(1),
+                            IsEnabled = reader.GetBoolean(2),
+                            OperatingSystem = reader.GetString(4),
+                            RowVersion = reader.GetSqlBinary(3).Value
+                        };
+
+                    }
+                }
+            }
+        }
+        return pc;
+    }
+    public EmbeddedDto? GetEmbeddedDevicesById(string id)
+    {
+        EmbeddedDto? edDto = null;
+        const string sql = @"
+        SELECT d.Id, d.Name, d.IsEnabled, d.RowVersion, e.IpAddress, e.NetworkName
+        FROM Device d
+        JOIN Embedded e ON d.Id = e.DeviceId
+        WHERE d.Id = @id";
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@id", id);
+                connection.Open();
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        edDto = new EmbeddedDto
+                        {
+                            Id = reader.GetString(0),
+                            Name = reader.GetString(1),
+                            IsEnabled = reader.GetBoolean(2),
+                            RowVersion = reader.GetSqlBinary(3).Value,
+                            IpAddress = reader.GetString(4),
+                            NetworkName = reader.GetString(5)
+                        };
+                    }
+                }
+            }
+        }
+
+        return edDto;
+    }
+    
     public bool AddSmartwatch(Smartwatches device)
     {
         var swId = GetIntId(device);
@@ -106,54 +246,10 @@ public class DeviceDbRepository : IDeviceDBRepository
             }
         }
     }
-    
-    public SmartwatchDto? GetSmartwatchById(string id)
+
+    public bool AddPersonalComputer(PersonalComputer device)
     {
-        SmartwatchDto smartwatch = null;
-        const string sql = @"
-        SELECT d.Id, d.Name, d.IsEnabled, d.RowVersion, s.BatteryPercentage
-        FROM Device d
-        JOIN Smartwatch s ON d.Id = s.DeviceId
-        WHERE d.Id = @id";
-
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            using (var command = new SqlCommand(sql, connection))
-            {
-                command.Parameters.AddWithValue("@id", id);
-                connection.Open();
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        // Correctly mapping to the DTO
-                        smartwatch = new SmartwatchDto
-                        {
-                            Id = reader.GetString(0),
-                            Name = reader.GetString(1),
-                            IsEnabled = reader.GetBoolean(2),
-                            BatteryLevel = reader.GetInt32(3),
-                            RowVersion = [reader.GetByte(4)]
-                        };
-
-                    }
-                }
-            }
-        }
-        return smartwatch;
-    }
-
-    public bool UpdateSmartwatch(string id, SmartwatchDto device)
-    {
-        const string updateDevice = @"
-        UPDATE Device
-        SET Name = @Name, IsEnabled = @IsEnabled
-        WHERE Id = @Id AND RowVersion = @RowVersion";
-        
-        const string updateSw = @"
-                UPDATE Smartwatch
-                SET BatteryPercentage = @BatteryPercentage
-                WHERE DeviceId = @DeviceId";
+        var pcId = GetIntId(device);
 
         using (var connection = new SqlConnection(_connectionString))
         {
@@ -162,28 +258,50 @@ public class DeviceDbRepository : IDeviceDBRepository
             {
                 try
                 {
-                    using (var deviceCmd = new SqlCommand(updateDevice, connection, transaction))
+                    using (var cmd = new SqlCommand("AddPersonalComputer", connection, transaction))
                     {
-                        deviceCmd.Parameters.AddWithValue("@Id", id);
-                        deviceCmd.Parameters.AddWithValue("@Name", device.Name);
-                        deviceCmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
-                        deviceCmd.Parameters.Add("@RowVersion", SqlDbType.Timestamp).Value = device.RowVersion; 
-
-                        int rowsAffected = deviceCmd.ExecuteNonQuery();
-
-                        // if no rows affected, must be a conflict.
-                        if (rowsAffected == 0)
-                        {
-                            transaction.Rollback();
-                            return false; 
-                        }
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@PcId", pcId);
+                        cmd.Parameters.AddWithValue("@DeviceId", device.Id);
+                        cmd.Parameters.AddWithValue("@Name", device.Name);
+                        cmd.Parameters.AddWithValue("@IsEnabled", device.IsOn);
+                        cmd.Parameters.AddWithValue("@OperationSystem", device.OperatingSystem);
+                        cmd.ExecuteNonQuery();
                     }
 
-                    using (var swCmd = new SqlCommand(updateSw, connection, transaction))
+                    transaction.Commit();
+                    return true;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    return false;
+                }
+            }
+        }
+    }
+
+    public bool AddEmbedded(EmbeddedDevices device)
+    {
+        var edId = GetIntId(device);
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            connection.Open();
+            using (var transaction = connection.BeginTransaction())
+            {
+                try
+                {
+                    using (var cmd = new SqlCommand("AddEmbedded", connection, transaction))
                     {
-                        swCmd.Parameters.AddWithValue("@BatteryPercentage", device.BatteryLevel);
-                        swCmd.Parameters.AddWithValue("@DeviceId", device.Id);
-                        swCmd.ExecuteNonQuery();
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@EdId", edId);
+                        cmd.Parameters.AddWithValue("@DeviceId", device.Id);
+                        cmd.Parameters.AddWithValue("@Name", device.Name);
+                        cmd.Parameters.AddWithValue("@IsEnabled", device.IsOn);
+                        cmd.Parameters.AddWithValue("@IpAddress", device.IpName);
+                        cmd.Parameters.AddWithValue("@NetworkName", device.NetworkName);
+                        cmd.ExecuteNonQuery();
                     }
 
                     transaction.Commit();
@@ -234,130 +352,6 @@ public class DeviceDbRepository : IDeviceDBRepository
         }
     }
 
-    public bool AddPersonalComputer(PersonalComputer device)
-    {
-        var pcId = GetIntId(device);
-
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            connection.Open();
-            using (var transaction = connection.BeginTransaction())
-            {
-                try
-                {
-                    using (var cmd = new SqlCommand("AddPersonalComputer", connection, transaction))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@PcId", pcId);
-                        cmd.Parameters.AddWithValue("@DeviceId", device.Id);
-                        cmd.Parameters.AddWithValue("@Name", device.Name);
-                        cmd.Parameters.AddWithValue("@IsEnabled", device.IsOn);
-                        cmd.Parameters.AddWithValue("@OperationSystem", device.OperatingSystem);
-                        cmd.ExecuteNonQuery();
-                    }
-
-                    transaction.Commit();
-                    return true;
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    return false;
-                }
-            }
-        }
-    }
-    
-    public PersonalComputerDto? GetPersonalComputerById(string id)
-    {
-        PersonalComputerDto pc = null;
-        const string sql = @"
-        SELECT d.Id, d.Name, d.IsEnabled, d.RowVersion, p.OperationSystem
-        FROM Device d
-        JOIN PersonalComputer p ON d.Id = p.DeviceId
-        WHERE d.Id = @id";
-
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            using (var command = new SqlCommand(sql, connection))
-            {
-                command.Parameters.AddWithValue("@id", id);
-                connection.Open();
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        // Correctly mapping to the DTO
-                        pc = new PersonalComputerDto()
-                        {
-                            Id = reader.GetString(0),
-                            Name = reader.GetString(1),
-                            IsEnabled = reader.GetBoolean(2),
-                            OperatingSystem = reader.GetString(3),
-                            RowVersion = [reader.GetByte(4)]
-                        };
-
-                    }
-                }
-            }
-        }
-        return pc;
-    }
-
-    public bool UpdatePersonalComputer(string id, PersonalComputerDto device)
-{
-    const string updateDevice = @"
-        UPDATE Device
-        SET Name = @Name, IsEnabled = @IsEnabled
-        WHERE Id = @Id AND RowVersion = @RowVersion";  
-
-    const string updatePC = @"
-        UPDATE PersonalComputer
-        SET OperationSystem = @OperationSystem
-        WHERE DeviceId = @DeviceId";
-
-    using (var connection = new SqlConnection(_connectionString))
-    {
-        connection.Open();
-        using (var transaction = connection.BeginTransaction())
-        {
-            try
-            {
-                using (var deviceCmd = new SqlCommand(updateDevice, connection, transaction))
-                {
-                    deviceCmd.Parameters.AddWithValue("@Id", id);
-                    deviceCmd.Parameters.AddWithValue("@Name", device.Name);
-                    deviceCmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
-                    deviceCmd.Parameters.Add("@RowVersion", SqlDbType.Timestamp).Value = device.RowVersion; 
-
-                    int rowsAffected = deviceCmd.ExecuteNonQuery();
-
-                    if (rowsAffected == 0)
-                    {
-                        transaction.Rollback();
-                        return false;  
-                    }
-                }
-
-                using (var pcCmd = new SqlCommand(updatePC, connection, transaction))
-                {
-                    pcCmd.Parameters.AddWithValue("@OperationSystem", device.OperatingSystem);
-                    pcCmd.Parameters.AddWithValue("@DeviceId", device.Id);
-                    pcCmd.ExecuteNonQuery();
-                }
-
-                transaction.Commit();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                transaction.Rollback();
-                return false;  
-            }
-        }
-    }
-}
-
 
     public bool DeletePersonalComputer(string id)
     {
@@ -394,133 +388,6 @@ public class DeviceDbRepository : IDeviceDBRepository
             }
         }
     }
-
-    public bool AddEmbedded(EmbeddedDevices device)
-    {
-        var edId = GetIntId(device);
-
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            connection.Open();
-            using (var transaction = connection.BeginTransaction())
-            {
-                try
-                {
-                    using (var cmd = new SqlCommand("AddEmbedded", connection, transaction))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@EdId", edId);
-                        cmd.Parameters.AddWithValue("@DeviceId", device.Id);
-                        cmd.Parameters.AddWithValue("@Name", device.Name);
-                        cmd.Parameters.AddWithValue("@IsEnabled", device.IsOn);
-                        cmd.Parameters.AddWithValue("@IpAddress", device.IpName);
-                        cmd.Parameters.AddWithValue("@NetworkName", device.NetworkName);
-                        cmd.ExecuteNonQuery();
-                    }
-
-                    transaction.Commit();
-                    return true;
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    return false;
-                }
-            }
-        }
-    }
-    
-    public EmbeddedDto? GetEmbeddedDevicesById(string id)
-    {
-        EmbeddedDto? edDto = null;
-        const string sql = @"
-        SELECT d.Id, d.Name, d.IsEnabled, d.RowVersion, e.IpAddress, e.NetworkName
-        FROM Device d
-        JOIN Embedded e ON d.Id = e.DeviceId
-        WHERE d.Id = @id";
-
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            using (var command = new SqlCommand(sql, connection))
-            {
-                command.Parameters.AddWithValue("@id", id);
-                connection.Open();
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        edDto = new EmbeddedDto
-                        {
-                            Id = reader.GetString(0),
-                            Name = reader.GetString(1),
-                            IsEnabled = reader.GetBoolean(2),
-                            RowVersion = [reader.GetByte(4)],
-                            IpAddress = reader.GetString(3),
-                            NetworkName = reader.GetString(5)
-                        };
-                    }
-                }
-            }
-        }
-
-        return edDto;
-    }
-    
-    public bool UpdateEmbeddedDevice(string id, EmbeddedDto device)
-{
-    const string updateDevice = @"
-        UPDATE Device
-        SET Name = @Name, IsEnabled = @IsEnabled
-        WHERE Id = @Id AND RowVersion = @RowVersion";  
-
-    const string updateED = @"
-        UPDATE Embedded
-        SET IpAddress = @IpAddress, NetworkName = @NetworkName
-        WHERE DeviceId = @DeviceId";
-
-    using (var connection = new SqlConnection(_connectionString))
-    {
-        connection.Open();
-        using (var transaction = connection.BeginTransaction())
-        {
-            try
-            {
-                using (var deviceCmd = new SqlCommand(updateDevice, connection, transaction))
-                {
-                    deviceCmd.Parameters.AddWithValue("@Id", id);
-                    deviceCmd.Parameters.AddWithValue("@Name", device.Name);
-                    deviceCmd.Parameters.AddWithValue("@IsEnabled", device.IsEnabled);
-                    deviceCmd.Parameters.Add("@RowVersion", SqlDbType.Timestamp).Value = device.RowVersion; 
-
-                    int rowsAffected = deviceCmd.ExecuteNonQuery();
-
-                    if (rowsAffected == 0)
-                    {
-                        transaction.Rollback();
-                        return false;  
-                    }
-                }
-                using (var edCmd = new SqlCommand(updateED, connection, transaction))
-                {
-                    edCmd.Parameters.AddWithValue("@IpAddress", device.IpAddress);
-                    edCmd.Parameters.AddWithValue("@NetworkName", device.NetworkName);
-                    edCmd.Parameters.AddWithValue("@DeviceId", device.Id);
-                    edCmd.ExecuteNonQuery();
-                }
-
-                transaction.Commit();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                transaction.Rollback();
-                Console.WriteLine($"Error: {ex.Message}"); 
-                return false;  
-            }
-        }
-    }
-}
-
 
     public bool DeleteEmbeddedDevice(string id)
     {
@@ -569,6 +436,112 @@ public class DeviceDbRepository : IDeviceDBRepository
             return Convert.ToInt32(command.ExecuteScalar()) > 0;
         }
     }
+    
+
+    public bool UpdateDevice(DeviceDto deviceDto)
+    {
+        const string sqlUpdateDevice = @"UPDATE Device SET Name = @Name, IsEnabled = @IsEnabled 
+                                    WHERE Id = @Id AND RowVersion = @RowVersion";
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            connection.Open();
+            using (var transaction = connection.BeginTransaction())
+            {
+                try
+                {
+                    using (var command = new SqlCommand(sqlUpdateDevice, connection, transaction))
+                    {
+                        command.Parameters.AddWithValue("@DeviceId", deviceDto.Id);
+                        command.Parameters.AddWithValue("@DeviceName", deviceDto.Name);
+                        command.Parameters.AddWithValue("@IsActive", deviceDto.IsEnabled);
+                        command.Parameters.AddWithValue("@RowVersion", deviceDto.RowVersion);
+
+                        var affectedRows = command.ExecuteNonQuery();
+
+                        if (affectedRows == 0)
+                        {
+                            transaction.Rollback();
+                            return false;
+                        }
+                    }
+
+                    var result = deviceDto switch
+                    {
+                        SmartwatchDto swDto => UpdateSmartwatch(swDto, connection, transaction),
+                        PersonalComputerDto pcDto => UpdatePersonalComputer(pcDto, connection, transaction),
+                        EmbeddedDto edDto => UpdateEmbedded(edDto, connection, transaction),
+                        _ => false
+                    };
+
+                    if (!result)
+                    {
+                        transaction.Rollback();
+                        return false;
+                    }
+
+                    transaction.Commit();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    Console.WriteLine($"Error updating device: {ex.Message}");
+                    return false;
+                }
+            }
+        }
+    }
+
+    public bool UpdateSmartwatch(SmartwatchDto swDto, SqlConnection connection, SqlTransaction transaction)
+    {
+        const string sqlUpdateSmartwatch = @"
+        UPDATE Smartwatch
+        SET BatteryPercentage = @BatteryPercentage
+        WHERE DeviceId = @DeviceId";
+
+        using (var command = new SqlCommand(sqlUpdateSmartwatch, connection, transaction))
+        {
+            command.Parameters.AddWithValue("@DeviceId", swDto.Id);
+            command.Parameters.AddWithValue("@BatteryPercentage", swDto.BatteryLevel);
+            var rowsAffected = command.ExecuteNonQuery();
+            return rowsAffected > 0;
+        }
+    }
+
+    public bool UpdatePersonalComputer(PersonalComputerDto pcDto, SqlConnection connection, SqlTransaction transaction)
+    {
+        const string sqlUpdatePC = @"
+        UPDATE PersonalComputer
+        SET OperatingSystem = @OperatingSystem
+        WHERE DeviceId = @DeviceId";
+
+        using (var command = new SqlCommand(sqlUpdatePC, connection, transaction))
+        {
+            command.Parameters.AddWithValue("@DeviceId", pcDto.Id);
+            command.Parameters.AddWithValue("@OperatingSystem", pcDto.OperatingSystem);
+            var rowsAffected = command.ExecuteNonQuery();
+            return rowsAffected > 0;
+        }
+    }
+
+    public bool UpdateEmbedded(EmbeddedDto edDto, SqlConnection connection, SqlTransaction transaction)
+    {
+        const string sqlUpdateED = @"
+        UPDATE Embedded
+        SET IpAddress = @IpAddress, NetworkName = @NetworkName
+        WHERE DeviceId = @DeviceId";
+
+        using (var command = new SqlCommand(sqlUpdateED, connection, transaction))
+        {
+            command.Parameters.AddWithValue("@DeviceId", edDto.Id);
+            command.Parameters.AddWithValue("@IpAddress", edDto.IpAddress);
+            command.Parameters.AddWithValue("@NetworkName", edDto.NetworkName);
+            var rowsAffected = command.ExecuteNonQuery();
+            return rowsAffected > 0;
+        }
+    }
+
 
     private static int GetIntId(Device device)
     {

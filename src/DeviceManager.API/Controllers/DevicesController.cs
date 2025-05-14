@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using DeviceManager.Entities;
+using DeviceManager.Entities.DTO;
 using DeviceManager.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,8 +22,10 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            var summary = _database.GetAllDevices();
-            return Results.Ok(summary);
+            var devices = _database.GetAllDevices().
+                Select(d => new {d.Id, d.Name, d.IsEnabled});
+            
+            return Results.Ok(devices);
         }
         catch (EmptyBatteryException ex)
         {
@@ -51,7 +54,7 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            Device? device = null;
+            DeviceDto? device = null;
 
             if (!_database.DeviceExists(id))
                 return Results.NotFound($"Device with ID '{id}' not found.");
@@ -62,6 +65,9 @@ public class DevicesController : ControllerBase
                 device = _database.GetEmbeddedDevicesById(id);
             else if (id.StartsWith("sw-", StringComparison.OrdinalIgnoreCase))
                 device = _database.GetSmartwatchById(id);
+
+            if (device == null)
+                return Results.NotFound($"Device with ID '{id}' could not be retrieved.");
 
             return Results.Ok(device);
         }
@@ -397,7 +403,8 @@ public class DevicesController : ControllerBase
     {
         try
         {
-            if (!_database.DeviceExists(id))
+            var deviceDto = _database.GetDeviceById(id);
+            if (deviceDto == null)
                 return Results.NotFound($"Device with ID '{id}' not found.");
 
             using var reader = new StreamReader(Request.Body);
@@ -445,43 +452,69 @@ public class DevicesController : ControllerBase
                         return Results.BadRequest("'batteryPercentage' must be an integer.");
                     }
 
-                    var oldSw = _database.GetSmartwatchById(id);
-                    if (oldSw == null)
-                        return Results.NotFound($"Smartwatch with ID '{id}' not found.");
+                    if (deviceDto is SmartwatchDto swDto)
+                    {
+                        var swEntity = new Smartwatches(
+                            swDto.Id,
+                            swDto.Name,
+                            swDto.IsEnabled,
+                            battery
+                        );
 
-                    var sw = new Smartwatches(id, name, oldSw.IsOn, battery);
+                        if (!swEntity.IsOn && newIsOn)
+                            try
+                            {
+                                swEntity.TurnOn();
+                            }
+                            catch (EmptyBatteryException ex)
+                            {
+                                return Results.BadRequest($"Battery error: {ex.Message}");
+                            }
 
-                    if (!oldSw.IsOn && newIsOn)
-                        sw.TurnOn();
-                    else
-                        sw.IsOn = newIsOn;
+                        swDto.BatteryLevel = battery;
+                        swDto.IsEnabled = newIsOn;
 
-                    if (_database.UpdateSmartwatch(id, sw))
-                        return Results.Ok("Smartwatch updated.");
+                        var result = _database.UpdateDevice(swDto);
+                        if (result)
+                            return Results.Ok("Smartwatch updated.");
+                        return Results.BadRequest("Smartwatch update failed.");
+                    }
+
                     break;
                 }
 
                 case "p":
                 {
                     var os = json["operatingSystem"]?.ToString();
+                    if (string.IsNullOrWhiteSpace(os))
+                        return Results.BadRequest("Missing 'operatingSystem' field.");
 
-                    var oldPc = _database.GetPersonalComputerById(id);
-                    if (oldPc == null)
-                        return Results.NotFound($"Personal Computer with ID '{id}' not found.");
+                    if (deviceDto is PersonalComputerDto pcDto)
+                    {
+                        var pcEntity = new PersonalComputer(
+                            pcDto.Id,
+                            pcDto.Name,
+                            pcDto.IsEnabled,
+                            os
+                        );
 
-                    var pc = new PersonalComputer(id, name, oldPc.IsOn, os);
+                        if (!pcEntity.IsOn && newIsOn)
+                            pcEntity.TurnOn();
+                        else
+                            pcEntity.IsOn = newIsOn;
 
-                    if (!oldPc.IsOn && newIsOn)
-                        pc.TurnOn();
-                    else
-                        pc.IsOn = newIsOn;
+                        pcDto.OperatingSystem = os;
 
-                    if (_database.UpdatePersonalComputer(id, pc))
-                        return Results.Ok("Personal Computer updated.");
+                        var result = _database.UpdateDevice(pcDto);
+                        if (result)
+                            return Results.Ok("Personal Computer updated.");
+                        return Results.BadRequest("Personal Computer update failed.");
+                    }
+
                     break;
                 }
 
-                case "ed":
+                case "ed": 
                 {
                     var ip = json["ipName"]?.ToString();
                     var network = json["networkName"]?.ToString();
@@ -489,19 +522,30 @@ public class DevicesController : ControllerBase
                     if (string.IsNullOrWhiteSpace(ip) || string.IsNullOrWhiteSpace(network))
                         return Results.BadRequest("Missing 'ipName' or 'networkName' fields.");
 
-                    var oldEd = _database.GetEmbeddedDevicesById(id);
-                    if (oldEd == null)
-                        return Results.NotFound($"Embedded Device with ID '{id}' not found.");
+                    if (deviceDto is EmbeddedDto edDto)
+                    {
+                        var edEntity = new EmbeddedDevices(
+                            edDto.Id,
+                            edDto.Name,
+                            edDto.IsEnabled,
+                            ip,
+                            network
+                        );
 
-                    var ed = new EmbeddedDevices(id, name, oldEd.IsOn, ip, network);
+                        if (!edEntity.IsOn && newIsOn)
+                            edEntity.TurnOn();
+                        else
+                            edEntity.IsOn = newIsOn;
 
-                    if (!oldEd.IsOn && newIsOn)
-                        ed.TurnOn();
-                    else
-                        ed.IsOn = newIsOn;
+                        edDto.IpAddress = ip;
+                        edDto.NetworkName = network;
 
-                    if (_database.UpdateEmbeddedDevice(id, ed))
-                        return Results.Ok("Embedded Device updated.");
+                        var result = _database.UpdateDevice(edDto);
+                        if (result)
+                            return Results.Ok("Embedded Device updated.");
+                        return Results.BadRequest("Embedded Device update failed.");
+                    }
+
                     break;
                 }
 
